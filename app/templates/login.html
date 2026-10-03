@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng Nhập — BookStore{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-lg p-4">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-book-half text-primary display-4"></i>
+                    <h3 class="fw-bold mt-2">Đăng Nhập</h3>
+                    <p class="text-muted small">Hệ thống Quản lý Nhà Sách (DBMS330284)</p>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger py-2 small" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="/login">
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-semibold small">Tên đăng nhập</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" required autofocus placeholder="Nhập username...">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label fw-semibold small">Mật khẩu</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required placeholder="Nhập mật khẩu...">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập
+                    </button>
+                </form>
+
+                <div class="mt-4 pt-3 border-top">
+                    <p class="text-muted small fw-bold mb-2">Tài khoản thử nghiệm theo 4 Role:</p>
+                    <table class="table table-sm table-bordered text-center small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Role</th>
+                                <th>Username</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="badge badge-role badge-role-admin">Admin</span></td><td><code>admin</code></td><td><code>admin123</code></td></tr>
+                            <tr><td><span class="badge badge-role badge-role-manager">Manager</span></td><td><code>manager</code></td><td><code>manager123</code></td></tr>
+                            <tr><td><span class="badge badge-role badge-role-sales">Sales</span></td><td><code>sales</code></td><td><code>sales123</code></td></tr>
+                            <tr><td><span class="badge badge-role badge-role-inventory">Inventory</span></td><td><code>inventory</code></td><td><code>inventory123</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

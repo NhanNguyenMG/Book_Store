@@ -1,0 +1,80 @@
+:root {
+    --primary-color: #1e3a8a;
+    --primary-hover: #1d4ed8;
+    --sidebar-bg: #0f172a;
+    --content-bg: #f8fafc;
+}
+
+body {
+    background-color: var(--content-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #334155;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.table {
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+
+.table thead th {
+    background-color: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.badge-role {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+}
+
+.badge-role-admin { background-color: #dc2626; color: white; }
+.badge-role-manager { background-color: #7c3aed; color: white; }
+.badge-role-sales { background-color: #2563eb; color: white; }
+.badge-role-inventory { background-color: #059669; color: white; }
+
+.badge-tier-vip { background-color: #f59e0b; color: #1e293b; font-weight: 700; }
+.badge-tier-gold { background-color: #fbbf24; color: #1e293b; }
+.badge-tier-silver { background-color: #94a3b8; color: white; }
+.badge-tier-standard { background-color: #cbd5e1; color: #334155; }
+
+.badge-status-completed { background-color: #dcfce7; color: #15803d; }
+.badge-status-pending { background-color: #fef9c3; color: #854d0e; }
+.badge-status-cancelled { background-color: #fee2e2; color: #b91c1c; }
+
+.stock-low {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+}
+
+footer {
+    margin-top: auto;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem 0;
+    font-size: 0.875rem;
+    color: #64748b;
+}

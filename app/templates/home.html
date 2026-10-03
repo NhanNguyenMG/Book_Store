@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Trang Chủ — BookStore Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h3 class="fw-bold mb-0">Bảng Điều Khiển Tổng Quan</h3>
+        <p class="text-muted small mb-0">Xin chào, <strong>{{ user.FullName }}</strong>! Bạn đang đăng nhập với quyền hạn: <span class="badge badge-role badge-role-{{ user.Role | lower }}">{{ user.Role }}</span></p>
+    </div>
+    {% if user.Role in ['Admin', 'Manager', 'Sales'] %}
+    <a href="/orders/create" class="btn btn-primary btn-sm px-3 shadow-sm">
+        <i class="bi bi-cart-plus me-1"></i> Bán Hàng Tại Quầy (POS)
+    </a>
+    {% endif %}
+</div>
+
+<!-- Stat Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card p-3 border-start border-primary border-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Tổng Đầu Sách</span>
+                    <h3 class="fw-bold my-1 text-primary">{{ stats.total_books or 0 }}</h3>
+                    <a href="/books" class="small text-decoration-none">Xem chi tiết &rarr;</a>
+                </div>
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary fs-3">
+                    <i class="bi bi-journal-bookmark"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card p-3 border-start border-success border-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Tổng Đơn Hàng</span>
+                    <h3 class="fw-bold my-1 text-success">{{ stats.total_orders or 0 }}</h3>
+                    <a href="/orders" class="small text-decoration-none">Xem lịch sử &rarr;</a>
+                </div>
+                <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success fs-3">
+                    <i class="bi bi-receipt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card p-3 border-start border-info border-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Khách Hàng</span>
+                    <h3 class="fw-bold my-1 text-info">{{ stats.total_customers or 0 }}</h3>
+                    <a href="/customers" class="small text-decoration-none">Xem danh sách &rarr;</a>
+                </div>
+                <div class="bg-info bg-opacity-10 p-3 rounded-circle text-info fs-3">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card p-3 border-start border-danger border-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Cảnh Báo Tồn Kho (&le; 5)</span>
+                    <h3 class="fw-bold my-1 text-danger">{{ stats.low_stock_count or 0 }}</h3>
+                    <a href="/reports/low-stock" class="small text-danger text-decoration-none">Xem sách sắp hết &rarr;</a>
+                </div>
+                <div class="bg-danger bg-opacity-10 p-3 rounded-circle text-danger fs-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Orders Table -->
+    <div class="col-lg-8">
+        <div class="card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Hóa Đơn Gần Đây</h5>
+                <a href="/orders" class="btn btn-outline-secondary btn-sm">Xem tất cả</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle small">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Ngày Lập</th>
+                            <th>Khách Hàng</th>
+                            <th>Phương Thức</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_orders %}
+                            {% for ord in recent_orders %}
+                            <tr>
+                                <td><strong>#{{ ord.OrderID }}</strong></td>
+                                <td>{{ ord.OrderDate.strftime('%d/%m/%Y %H:%M') if ord.OrderDate else '' }}</td>
+                                <td>{{ ord.CustomerName }}</td>
+                                <td>
+                                    {% if ord.PaymentMethod == 'Cash' %}
+                                    <span class="badge bg-light text-dark border">Tiền mặt</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark border">Chuyển khoản</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold">{{ "{:,.0f}".format(ord.TotalAmount or 0) }} đ</td>
+                                <td>
+                                    <span class="badge badge-status-{{ ord.Status | lower }}">{{ ord.Status }}</span>
+                                </td>
+                                <td>
+                                    <a href="/orders/{{ ord.OrderID }}" class="btn btn-outline-primary btn-action">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">Chưa có hóa đơn nào</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert Box -->
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Cảnh Báo Hết Hàng</h5>
+                <a href="/reports/low-stock" class="btn btn-outline-danger btn-sm">Chi tiết</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle small">
+                    <thead>
+                        <tr>
+                            <th>Tên Sách</th>
+                            <th class="text-center">Tồn Kho</th>
+                            <th class="text-end">Đơn Giá</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if low_stock_books %}
+                            {% for b in low_stock_books %}
+                            <tr>
+                                <td class="text-truncate" style="max-width: 150px;" title="{{ b.Title }}">{{ b.Title }}</td>
+                                <td class="text-center stock-low">{{ b.StockQuantity }}</td>
+                                <td class="text-end">{{ "{:,.0f}".format(b.Price or 0) }} đ</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Tất cả sách đều còn đủ tồn kho</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
