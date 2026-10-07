@@ -1,6 +1,6 @@
 # HỆ THỐNG QUẢN LÝ NHÀ SÁCH (BOOK STORE MANAGEMENT SYSTEM)
 
-Hệ thống quản lý vận hành nội bộ và bán hàng tại quầy (Back-Office & POS) cho chuỗi nhà sách - Học phần **Hệ Quản Trị Cơ Sở Dữ Liệu (DBMS330284)**.
+Hệ thống quản lý vận hành nội bộ và bán hàng tại quầy (Back-Office & POS) cho chuỗi nhà sách.
 
 ---
 

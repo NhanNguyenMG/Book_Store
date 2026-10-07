@@ -12,7 +12,7 @@ from app.database import execute_query
 
 load_dotenv()
 
-app = FastAPI(title="Hệ Thống Quản Lý Nhà Sách", description="Dự án học phần Hệ Quản Trị Cơ Sở Dữ Liệu")
+app = FastAPI(title="Hệ Thống Quản Lý Nhà Sách", description="Hệ thống quản lý vận hành và bán hàng nhà sách")
 
 # Cấu hình Secret Key cho SessionMiddleware
 SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "bookstore_super_secret_key_dbms_2026")
