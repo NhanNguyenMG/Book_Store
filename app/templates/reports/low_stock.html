@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Cảnh Báo Tồn Kho Thấp - BookStore{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-1 fw-bold text-dark"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Cảnh Báo Tồn Kho Thấp</h2>
+        <p class="text-muted small mb-0">Truy vấn theo Inline Table-Valued Function <code>dbo.fn_GetLowStockBooks(@Threshold)</code></p>
+    </div>
+    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    <a href="/books" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-boxes"></i>
+        <span>Quản lý kho sách</span>
+    </a>
+    {% endif %}
+</div>
+
+<!-- Form thiết lập ngưỡng -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <form method="get" action="/reports/low-stock" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Ngưỡng Tồn Kho Cảnh Báo (<=)</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" name="threshold" class="form-control" value="{{ threshold }}" min="1" max="1000">
+                    <span class="input-group-text">cuốn</span>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-danger btn-sm px-3">
+                    <i class="bi bi-funnel me-1"></i>Kiểm Tra Tồn Kho
+                </button>
+                <a href="/reports/low-stock?threshold=10" class="btn btn-outline-secondary btn-sm px-3">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Mặc định (10)
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng kết quả -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-danger">
+            <i class="bi bi-bell-fill me-2"></i>Có {{ low_books | length }} tựa sách đang có lượng tồn &le; {{ threshold }} cuốn
+        </span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-center" style="width: 80px;">Mã Sách</th>
+                    <th>Tựa Sách</th>
+                    <th>Thể Loại</th>
+                    <th class="text-end">Đơn Giá</th>
+                    <th class="text-center" style="width: 140px;">Số Lượng Tồn</th>
+                    <th class="text-center" style="width: 140px;">Tình Trạng</th>
+                    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                    <th class="text-center" style="width: 110px;">Thao Tác</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if low_books and low_books | length > 0 %}
+                    {% for book in low_books %}
+                    <tr>
+                        <td class="text-center text-muted">#{{ book.BookID }}</td>
+                        <td>
+                            <span class="fw-semibold text-dark">{{ book.Title }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border">{{ book.GenreName }}</span>
+                        </td>
+                        <td class="text-end fw-semibold">
+                            {{ "{:,.0f}".format(book.Price) }} ₫
+                        </td>
+                        <td class="text-center fw-bold fs-6">
+                            {% if book.StockQuantity == 0 %}
+                                <span class="text-danger">0</span>
+                            {% elif book.StockQuantity <= 5 %}
+                                <span class="text-danger">{{ book.StockQuantity }}</span>
+                            {% else %}
+                                <span class="text-warning text-dark">{{ book.StockQuantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if book.StockQuantity == 0 %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Hết hàng</span>
+                            {% elif book.StockQuantity <= 5 %}
+                                <span class="badge bg-danger bg-opacity-75"><i class="bi bi-exclamation-octagon me-1"></i>Rất thấp</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Cần nhập</span>
+                            {% endif %}
+                        </td>
+                        {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                        <td class="text-center">
+                            <a href="/books/{{ book.BookID }}/edit" class="btn btn-outline-primary btn-sm" title="Điều chỉnh thông tin và kho">
+                                <i class="bi bi-pencil-square me-1"></i>Nhập kho
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-success">
+                            <i class="bi bi-check-circle fs-2 d-block mb-2"></i>
+                            Tất cả sách hiện tại đều có số lượng tồn trên {{ threshold }} cuốn. Tình trạng kho an toàn!
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

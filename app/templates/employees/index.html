@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Nhân Viên — BookStore{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-0">Quản Lý Nhân Viên</h3>
+        <p class="text-muted small mb-0">Danh sách nhân viên, tài khoản và phân quyền hệ thống</p>
+    </div>
+    {% if user.Role == 'Admin' %}
+    <a href="/employees/create" class="btn btn-primary btn-sm px-3 shadow-sm">
+        <i class="bi bi-person-plus-fill me-1"></i> Thêm Nhân Viên Mới
+    </a>
+    {% endif %}
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 70px;">Mã</th>
+                    <th>Họ và Tên</th>
+                    <th>Tên Đăng Nhập</th>
+                    <th class="text-center">Vai Trò Hệ Thống</th>
+                    {% if user.Role == 'Admin' %}
+                    <th class="text-center" style="width: 140px;">Thao Tác</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if employees %}
+                    {% for emp in employees %}
+                    <tr>
+                        <td class="text-muted fw-bold">#{{ emp.EmployeeID }}</td>
+                        <td class="fw-semibold">{{ emp.FullName }}</td>
+                        <td><code>{{ emp.Username }}</code></td>
+                        <td class="text-center">
+                            <span class="badge badge-role badge-role-{{ emp.Role | lower }} px-3 py-1">
+                                {{ emp.Role }}
+                            </span>
+                        </td>
+                        {% if user.Role == 'Admin' %}
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/employees/{{ emp.EmployeeID }}/edit" class="btn btn-outline-primary" title="Chỉnh sửa / Đổi mật khẩu">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if emp.EmployeeID != user.EmployeeID %}
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ emp.EmployeeID }}" title="Xóa tài khoản">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            {% if emp.EmployeeID != user.EmployeeID %}
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ emp.EmployeeID }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-sm">
+                                    <div class="modal-content">
+                                        <form method="POST" action="/employees/{{ emp.EmployeeID }}/delete">
+                                            <div class="modal-header py-2">
+                                                <h6 class="modal-title text-danger fw-bold">Xác nhận xóa tài khoản</h6>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-start small">
+                                                Bạn có chắc chắn muốn xóa nhân viên: <br>
+                                                <strong>{{ emp.FullName }}</strong> ({{ emp.Username }})?
+                                                <div class="text-muted mt-1 small">Lưu ý: Không thể xóa nhân viên đã từng lập hóa đơn.</div>
+                                            </div>
+                                            <div class="modal-footer py-1">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="5" class="text-center text-muted py-3">Chưa có nhân viên nào</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

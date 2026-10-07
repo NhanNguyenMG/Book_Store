@@ -8,7 +8,7 @@
         <h3 class="fw-bold mb-0">Bảng Điều Khiển Tổng Quan</h3>
         <p class="text-muted small mb-0">Xin chào, <strong>{{ user.FullName }}</strong>! Bạn đang đăng nhập với quyền hạn: <span class="badge badge-role badge-role-{{ user.Role | lower }}">{{ user.Role }}</span></p>
     </div>
-    {% if user.Role in ['Admin', 'Manager', 'Sales'] %}
+    {% if user.Role in ['Manager', 'Sales'] %}
     <a href="/orders/create" class="btn btn-primary btn-sm px-3 shadow-sm">
         <i class="bi bi-cart-plus me-1"></i> Bán Hàng Tại Quầy (POS)
     </a>

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Thể Loại — BookStore{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-0">Quản Lý Thể Loại</h3>
+        <p class="text-muted small mb-0">Danh mục các thể loại sách trong hệ thống</p>
+    </div>
+    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addGenreModal">
+        <i class="bi bi-plus-lg me-1"></i> Thêm Thể Loại
+    </button>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Mã</th>
+                            <th>Tên Thể Loại</th>
+                            {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                            <th class="text-center" style="width: 120px;">Thao Tác</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if genres %}
+                            {% for g in genres %}
+                            <tr>
+                                <td class="text-muted fw-bold">#{{ g.GenreID }}</td>
+                                <td class="fw-semibold">{{ g.GenreName }}</td>
+                                {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                                <td class="text-center">
+                                    <button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#editModal{{ g.GenreID }}" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-action" data-bs-toggle="modal" data-bs-target="#deleteModal{{ g.GenreID }}" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+
+                                    <!-- Edit Modal -->
+                                    <div class="modal fade" id="editModal{{ g.GenreID }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content">
+                                                <form method="POST" action="/genres/{{ g.GenreID }}/edit">
+                                                    <div class="modal-header py-2">
+                                                        <h6 class="modal-title fw-bold">Sửa Thể Loại #{{ g.GenreID }}</h6>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-start">
+                                                        <label class="form-label small fw-semibold">Tên thể loại</label>
+                                                        <input type="text" name="genre_name" class="form-control form-control-sm" required value="{{ g.GenreName }}">
+                                                    </div>
+                                                    <div class="modal-footer py-1">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteModal{{ g.GenreID }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content">
+                                                <form method="POST" action="/genres/{{ g.GenreID }}/delete">
+                                                    <div class="modal-header py-2">
+                                                        <h6 class="modal-title text-danger fw-bold">Xác nhận xóa</h6>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-start small">
+                                                        Bạn có chắc muốn xóa thể loại: <strong>{{ g.GenreName }}</strong>?
+                                                    </div>
+                                                    <div class="modal-footer py-1">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                        <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">Chưa có thể loại nào</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Genre Modal -->
+<div class="modal fade" id="addGenreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <form method="POST" action="/genres/create">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title fw-bold">Thêm Thể Loại Mới</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <label class="form-label small fw-semibold">Tên thể loại <span class="text-danger">*</span></label>
+                    <input type="text" name="genre_name" class="form-control form-control-sm" required placeholder="Ví dụ: Khoa học viễn tưởng">
+                </div>
+                <div class="modal-footer py-1">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Thêm mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

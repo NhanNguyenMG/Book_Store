@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Tác Giả — BookStore{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-0">Quản Lý Tác Giả</h3>
+        <p class="text-muted small mb-0">Danh sách các tác giả viết sách trong hệ thống</p>
+    </div>
+    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addAuthorModal">
+        <i class="bi bi-plus-lg me-1"></i> Thêm Tác Giả
+    </button>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-9 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Mã</th>
+                            <th>Họ Tên Tác Giả</th>
+                            <th class="text-center">Năm Sinh</th>
+                            <th>Quốc Tịch</th>
+                            {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                            <th class="text-center" style="width: 120px;">Thao Tác</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if authors %}
+                            {% for a in authors %}
+                            <tr>
+                                <td class="text-muted fw-bold">#{{ a.AuthorID }}</td>
+                                <td class="fw-semibold text-primary">{{ a.AuthorName }}</td>
+                                <td class="text-center">{{ a.Yob or '-' }}</td>
+                                <td>{{ a.Nationality or '-' }}</td>
+                                {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                                <td class="text-center">
+                                    <button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#editModal{{ a.AuthorID }}" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-action" data-bs-toggle="modal" data-bs-target="#deleteModal{{ a.AuthorID }}" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+
+                                    <!-- Edit Modal -->
+                                    <div class="modal fade" id="editModal{{ a.AuthorID }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <form method="POST" action="/authors/{{ a.AuthorID }}/edit">
+                                                    <div class="modal-header py-2">
+                                                        <h6 class="modal-title fw-bold">Sửa Tác Giả #{{ a.AuthorID }}</h6>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-start">
+                                                        <div class="mb-2">
+                                                            <label class="form-label small fw-semibold">Họ tên tác giả</label>
+                                                            <input type="text" name="author_name" class="form-control form-control-sm" required value="{{ a.AuthorName }}">
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <label class="form-label small fw-semibold">Năm sinh</label>
+                                                            <input type="number" name="yob" min="1800" max="2100" class="form-control form-control-sm" value="{{ a.Yob if a.Yob is not none else '' }}">
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <label class="form-label small fw-semibold">Quốc tịch</label>
+                                                            <input type="text" name="nationality" class="form-control form-control-sm" value="{{ a.Nationality if a.Nationality else '' }}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer py-1">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteModal{{ a.AuthorID }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content">
+                                                <form method="POST" action="/authors/{{ a.AuthorID }}/delete">
+                                                    <div class="modal-header py-2">
+                                                        <h6 class="modal-title text-danger fw-bold">Xác nhận xóa</h6>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-start small">
+                                                        Bạn có chắc muốn xóa tác giả: <strong>{{ a.AuthorName }}</strong>?
+                                                    </div>
+                                                    <div class="modal-footer py-1">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                        <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">Chưa có tác giả nào</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Author Modal -->
+<div class="modal fade" id="addAuthorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="/authors/create">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title fw-bold">Thêm Tác Giả Mới</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Họ tên tác giả <span class="text-danger">*</span></label>
+                        <input type="text" name="author_name" class="form-control form-control-sm" required placeholder="Ví dụ: Nguyễn Nhật Ánh">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Năm sinh</label>
+                        <input type="number" name="yob" min="1800" max="2100" class="form-control form-control-sm" placeholder="Ví dụ: 1955">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Quốc tịch</label>
+                        <input type="text" name="nationality" class="form-control form-control-sm" placeholder="Ví dụ: Việt Nam">
+                    </div>
+                </div>
+                <div class="modal-footer py-1">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Thêm mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

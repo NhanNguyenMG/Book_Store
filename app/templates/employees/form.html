@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{% if employee and employee.EmployeeID %}Sửa Nhân Viên #{{ employee.EmployeeID }}{% else %}Thêm Nhân Viên Mới{% endif %} — BookStore{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm p-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <h4 class="fw-bold mb-0">
+                        <i class="bi {% if employee and employee.EmployeeID %}bi-person-gear text-primary{% else %}bi-person-plus-fill text-success{% endif %} me-2"></i>
+                        {% if employee and employee.EmployeeID %}Chỉnh Sửa Nhân Viên #{{ employee.EmployeeID }}{% else %}Thêm Nhân Viên Mới{% endif %}
+                    </h4>
+                    <a href="/employees" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger py-2 small" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% if employee and employee.EmployeeID %}/employees/{{ employee.EmployeeID }}/edit{% else %}/employees/create{% endif %}">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label fw-semibold small">Họ và tên <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required value="{{ employee.FullName if employee else '' }}" placeholder="Ví dụ: Nguyễn Văn Quản Trị">
+                    </div>
+
+                    {% if not employee or not employee.EmployeeID %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-semibold small">Tên đăng nhập (Username) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" name="username" required value="{{ employee.Username if employee else '' }}" placeholder="Ví dụ: nguyenvan">
+                        <div class="form-text small">Tên đăng nhập là duy nhất (ràng buộc UQ_Employee_Username).</div>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tên đăng nhập</label>
+                        <input type="text" class="form-control bg-light" value="{{ employee.Username }}" readonly>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="role_name" class="form-label fw-semibold small">Vai trò hệ thống <span class="text-danger">*</span></label>
+                        <select class="form-select" id="role_name" name="role_name" required>
+                            {% for r in roles %}
+                            <option value="{{ r }}" {% if employee and employee.Role == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Role quyết định Login SQL và quyền hạn thao tác trên hệ thống.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label fw-semibold small">
+                            Mật khẩu {% if not employee or not employee.EmployeeID %}<span class="text-danger">*</span>{% else %}(để trống nếu không đổi){% endif %}
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" {% if not employee or not employee.EmployeeID %}required{% endif %} placeholder="Nhập mật khẩu mới...">
+                        <div class="form-text small">Mật khẩu sẽ tự động được băm an toàn bằng PBKDF2-HMAC-SHA256.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a href="/employees" class="btn btn-secondary px-4">Hủy</a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-save me-1"></i> Lưu thông tin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

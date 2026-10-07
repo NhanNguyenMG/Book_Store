@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{% if customer and customer.CustomerID %}Sửa Khách Hàng #{{ customer.CustomerID }}{% else %}Thêm Khách Hàng Mới{% endif %} — BookStore{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm p-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <h4 class="fw-bold mb-0">
+                        <i class="bi {% if customer and customer.CustomerID %}bi-person-gear text-primary{% else %}bi-person-plus text-success{% endif %} me-2"></i>
+                        {% if customer and customer.CustomerID %}Chỉnh Sửa Khách Hàng #{{ customer.CustomerID }}{% else %}Thêm Khách Hàng Mới{% endif %}
+                    </h4>
+                    <a href="/customers" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger py-2 small" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% if customer and customer.CustomerID %}/customers/{{ customer.CustomerID }}/edit{% else %}/customers/create{% endif %}">
+                    <div class="mb-3">
+                        <label for="customer_name" class="form-label fw-semibold small">Họ và tên khách hàng <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" required value="{{ customer.CustomerName if customer else '' }}" placeholder="Ví dụ: Nguyễn Văn A">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone" class="form-label fw-semibold small">Số điện thoại <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="phone" name="phone" required value="{{ customer.Phone if customer else '' }}" placeholder="Ví dụ: 0901234567">
+                        <div class="form-text small">Số điện thoại chỉ gồm chữ số (9 đến 11 số), dùng để tra cứu tích điểm.</div>
+                    </div>
+
+                    {% if not customer or not customer.CustomerID %}
+                    <div class="mb-4">
+                        <label for="reward_points" class="form-label fw-semibold small">Điểm tích lũy ban đầu</label>
+                        <input type="number" min="0" class="form-control" id="reward_points" name="reward_points" value="0">
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a href="/customers" class="btn btn-secondary px-4">Hủy</a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-save me-1"></i> Lưu thông tin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

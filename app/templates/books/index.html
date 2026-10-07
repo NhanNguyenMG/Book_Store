@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Danh Mục Sách — BookStore{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-0">Danh Mục Sách</h3>
+        <p class="text-muted small mb-0">Tra cứu, quản lý thông tin sách và kiểm soát tồn kho</p>
+    </div>
+    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    <a href="/books/create" class="btn btn-primary btn-sm px-3 shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Thêm Sách Mới
+    </a>
+    {% endif %}
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="card p-3 mb-4 shadow-sm">
+    <form method="GET" action="/books" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Từ khóa tìm kiếm</label>
+            <input type="text" name="keyword" class="form-control form-control-sm" placeholder="Tên sách, tác giả..." value="{{ filters.keyword }}">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold">Thể loại</label>
+            <select name="genre_id" class="form-select form-select-sm">
+                <option value="">-- Tất cả thể loại --</option>
+                {% for g in genres %}
+                <option value="{{ g.GenreID }}" {% if filters.genre_id == g.GenreID %}selected{% endif %}>{{ g.GenreName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold">Tác giả</label>
+            <select name="author_id" class="form-select form-select-sm">
+                <option value="">-- Tất cả tác giả --</option>
+                {% for a in authors %}
+                <option value="{{ a.AuthorID }}" {% if filters.author_id == a.AuthorID %}selected{% endif %}>{{ a.AuthorName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold">Khoảng giá (VNĐ)</label>
+            <div class="input-group input-group-sm">
+                <input type="number" name="min_price" class="form-control" placeholder="Từ" value="{{ filters.min_price if filters.min_price is not none else '' }}">
+                <input type="number" name="max_price" class="form-control" placeholder="Đến" value="{{ filters.max_price if filters.max_price is not none else '' }}">
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="in_stock_only" id="in_stock_only" value="true" {% if filters.in_stock_only %}checked{% endif %}>
+                <label class="form-check-label small" for="in_stock_only">Chỉ sách còn hàng</label>
+            </div>
+        </div>
+
+        <div class="col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+            <a href="/books" class="btn btn-outline-secondary btn-sm" title="Xóa bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Books Table -->
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">Mã</th>
+                    <th>Tên Sách</th>
+                    <th>Thể Loại</th>
+                    <th>Tác Giả</th>
+                    <th>Nhà Xuất Bản</th>
+                    <th class="text-end">Đơn Giá</th>
+                    <th class="text-center">Tồn Kho</th>
+                    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                    <th class="text-center" style="width: 140px;">Thao Tác</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if books %}
+                    {% for b in books %}
+                    <tr>
+                        <td class="text-muted fw-bold">#{{ b.BookID }}</td>
+                        <td class="fw-semibold text-primary">{{ b.Title }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ b.GenreName }}</span></td>
+                        <td>{{ b.AuthorName }}</td>
+                        <td class="text-muted small">{{ b.PublisherName }}</td>
+                        <td class="text-end fw-bold">{{ "{:,.0f}".format(b.Price) }} đ</td>
+                        <td class="text-center">
+                            {% if b.StockQuantity <= 5 %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ b.StockQuantity }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    {{ b.StockQuantity }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#stockModal{{ b.BookID }}" title="Điều chỉnh tồn kho">
+                                    <i class="bi bi-box-seam"></i>
+                                </button>
+                                <a href="/books/{{ b.BookID }}/edit" class="btn btn-outline-primary" title="Chỉnh sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ b.BookID }}" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Stock Adjustment Modal -->
+                            <div class="modal fade" id="stockModal{{ b.BookID }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-sm">
+                                    <div class="modal-content">
+                                        <form method="POST" action="/books/{{ b.BookID }}/stock">
+                                            <div class="modal-header py-2">
+                                                <h6 class="modal-title fw-bold">Nhập/Xuất Kho Sách #{{ b.BookID }}</h6>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <p class="small text-muted mb-2">Sách: <strong>{{ b.Title }}</strong></p>
+                                                <p class="small mb-2">Tồn hiện tại: <strong class="text-primary">{{ b.StockQuantity }}</strong></p>
+                                                <label class="form-label small fw-semibold">Số lượng thay đổi (+/-)</label>
+                                                <input type="number" name="delta" class="form-control form-control-sm" required placeholder="Ví dụ: +10 hoặc -5">
+                                                <div class="form-text small">Dương (+) để nhập thêm kho, âm (-) để xuất điều chỉnh.</div>
+                                            </div>
+                                            <div class="modal-footer py-1">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                <button type="submit" class="btn btn-success btn-sm">Cập nhật</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ b.BookID }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-sm">
+                                    <div class="modal-content">
+                                        <form method="POST" action="/books/{{ b.BookID }}/delete">
+                                            <div class="modal-header py-2">
+                                                <h6 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Xác nhận xóa</h6>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-start small">
+                                                Bạn có chắc chắn muốn xóa cuốn sách: <br>
+                                                <strong class="text-danger">{{ b.Title }}</strong>?
+                                                <div class="text-muted mt-1 small">Lưu ý: Không thể xóa sách đã từng phát sinh hóa đơn.</div>
+                                            </div>
+                                            <div class="modal-footer py-1">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                <button type="submit" class="btn btn-danger btn-sm">Xác nhận xóa</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                            Không tìm thấy sách nào phù hợp với bộ lọc tìm kiếm.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

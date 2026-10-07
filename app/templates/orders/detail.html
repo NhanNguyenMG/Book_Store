@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Hóa Đơn #{{ order.OrderID }} - BookStore{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-receipt text-primary"></i>
+            <span>Chi Tiết Hóa Đơn #{{ order.OrderID }}</span>
+            {% if order.Status == 'Completed' %}
+                <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Completed</span>
+            {% elif order.Status == 'Cancelled' %}
+                <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Cancelled</span>
+            {% else %}
+                <span class="badge bg-warning text-dark fs-6"><i class="bi bi-hourglass me-1"></i>Pending</span>
+            {% endif %}
+        </h2>
+        <p class="text-muted small mb-0">Thời gian tạo: {{ order.OrderDate.strftime('%d/%m/%Y %H:%M:%S') if order.OrderDate else '' }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/orders" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-arrow-left"></i>
+            <span>Về danh sách hóa đơn</span>
+        </a>
+        <a href="/orders/create" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-cart-plus"></i>
+            <span>Lập đơn mới</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- THÔNG TIN HÓA ĐƠN -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Khách Hàng</span>
+                {% if order.CustomerName %}
+                    <h6 class="fw-bold mb-1 text-primary">{{ order.CustomerName }}</h6>
+                    {% if order.Phone %}
+                    <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ order.Phone }}</div>
+                    {% endif %}
+                {% else %}
+                    <h6 class="fw-bold mb-1 text-secondary fst-italic">Khách vãng lai</h6>
+                    <div class="small text-muted">Không áp dụng tích lũy điểm</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Nhân Viên Bán</span>
+                <h6 class="fw-bold mb-1 text-dark">{{ order.EmployeeName or 'Hệ thống' }}</h6>
+                <div class="small text-muted">Mã NV: {{ order.EmployeeID }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Phương Thức Thanh Toán</span>
+                <h6 class="fw-bold mb-1">
+                    {% if order.PaymentMethod == 'Cash' %}
+                        <span class="badge bg-secondary"><i class="bi bi-cash me-1"></i>Tiền mặt (Cash)</span>
+                    {% elif order.PaymentMethod == 'Transfer' %}
+                        <span class="badge bg-info text-dark"><i class="bi bi-credit-card me-1"></i>Chuyển khoản (Transfer)</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark">{{ order.PaymentMethod }}</span>
+                    {% endif %}
+                </h6>
+                <div class="small text-muted">Thanh toán tại quầy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm border-0 h-100 bg-light">
+            <div class="card-body">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Tổng Giá Trị Đơn Hàng</span>
+                <h4 class="fw-bold mb-0 text-danger">{{ "{:,.0f}".format(order.TotalAmount or 0) }} ₫</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BẢNG CHI TIẾT SẢN PHẨM -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-list-check me-2 text-primary"></i>Danh Sách Sản Phẩm Đã Mua</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-center" style="width: 60px;">STT</th>
+                    <th>Tựa Sách</th>
+                    <th>Thể Loại</th>
+                    <th>Tác Giả</th>
+                    <th class="text-end" style="width: 130px;">Đơn Giá</th>
+                    <th class="text-center" style="width: 100px;">Số Lượng</th>
+                    <th class="text-end" style="width: 150px;">Thành Tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if items and items | length > 0 %}
+                    {% for item in items %}
+                    <tr>
+                        <td class="text-center text-muted">{{ loop.index }}</td>
+                        <td class="fw-semibold text-dark">{{ item.Title }}</td>
+                        <td><span class="badge bg-light text-secondary border">{{ item.GenreName }}</span></td>
+                        <td><small class="text-muted">{{ item.AuthorName }}</small></td>
+                        <td class="text-end">{{ "{:,.0f}".format(item.UnitPrice) }} ₫</td>
+                        <td class="text-center fw-bold">{{ item.Quantity }}</td>
+                        <td class="text-end fw-bold text-success">{{ "{:,.0f}".format(item.SubTotal) }} ₫</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="table-light border-top">
+                        <td colspan="6" class="text-end fw-bold fs-6">TỔNG CỘNG:</td>
+                        <td class="text-end fw-bold text-danger fs-5">{{ "{:,.0f}".format(order.TotalAmount or 0) }} ₫</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">Không có dữ liệu chi tiết cho đơn hàng này.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- NÚT HỦY ĐƠN HÀNG (TRANSACTION & TRIGGER DEMO) -->
+{% if order.Status == 'Completed' %}
+<div class="card shadow-sm border-0 border-start border-danger border-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="fw-bold text-danger mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Hủy Hóa Đơn Bán Hàng</h6>
+            <p class="text-muted small mb-0">Khi bấm hủy hóa đơn, hệ thống sẽ thực thi Stored Procedure <code>sp_CancelOrder</code> trong một Transaction an toàn, kích hoạt Trigger tự động hoàn trả số lượng sách về kho và khấu trừ điểm thưởng của khách hàng.</p>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+            <i class="bi bi-x-circle me-1"></i>Hủy Hóa Đơn Này
+        </button>
+    </div>
+</div>
+
+<!-- Modal xác nhận hủy hóa đơn -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-octagon me-2"></i>Xác Nhận Hủy Hóa Đơn</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn hủy hóa đơn <strong>#{{ order.OrderID }}</strong> không?</p>
+                <div class="alert alert-warning py-2 mb-0 small">
+                    <i class="bi bi-info-circle me-1"></i>Thao tác này sẽ chuyển trạng thái hóa đơn sang <strong>Cancelled</strong>, hoàn lại số lượng sách đã mua vào kho và trừ điểm tích lũy của khách hàng tương ứng.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <form method="post" action="/orders/{{ order.OrderID }}/cancel" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-check-lg me-1"></i>Đồng Ý Hủy Đơn
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif order.Status == 'Cancelled' %}
+<div class="alert alert-secondary d-flex align-items-center shadow-sm">
+    <i class="bi bi-info-circle-fill me-2 fs-5 text-secondary"></i>
+    <span>Hóa đơn này đã ở trạng thái <strong>Cancelled</strong>. Toàn bộ sách đã được hoàn lại kho và không thể chỉnh sửa thêm.</span>
+</div>
+{% endif %}
+
+{% endblock %}
