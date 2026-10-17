@@ -83,7 +83,7 @@ async def list_books(
     })
 
 @router.get("/create", response_class=HTMLResponse)
-async def create_book_page(request: Request, user=Depends(require_role(["Admin", "Manager", "Inventory"]))):
+async def create_book_page(request: Request, user=Depends(require_role(["Manager", "Inventory"]))):
     role = user.get("Role")
     genres = execute_query("SELECT GenreID, GenreName FROM dbo.Genres ORDER BY GenreName", role=role)
     authors = execute_query("SELECT AuthorID, AuthorName FROM dbo.Author ORDER BY AuthorName", role=role)
@@ -108,7 +108,7 @@ async def create_book_action(
     publisher_id: int = Form(...),
     price: float = Form(...),
     stock_quantity: int = Form(0),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
@@ -140,7 +140,7 @@ async def create_book_action(
         })
 
 @router.get("/{book_id}/edit", response_class=HTMLResponse)
-async def edit_book_page(book_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Inventory"]))):
+async def edit_book_page(book_id: int, request: Request, user=Depends(require_role(["Manager", "Inventory"]))):
     role = user.get("Role")
     books = execute_sp("dbo.sp_Book_GetById", (book_id,), role=role)
     if not books or len(books) == 0:
@@ -170,11 +170,17 @@ async def edit_book_action(
     publisher_id: int = Form(...),
     price: float = Form(...),
     stock_quantity: int = Form(...),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
+        # Enforce SoD: Manager cannot modify stock level during book edit
+        if role != "Inventory":
+            current = execute_sp("dbo.sp_Book_GetById", (book_id,), role=role)
+            if current:
+                stock_quantity = current[0].get("StockQuantity", stock_quantity)
+
         execute_sp(
             "dbo.sp_Book_Update",
             (book_id, title.strip(), genre_id, author_id, publisher_id, price, stock_quantity),
@@ -202,7 +208,7 @@ async def edit_book_action(
         })
 
 @router.post("/{book_id}/delete")
-async def delete_book_action(book_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Inventory"]))):
+async def delete_book_action(book_id: int, request: Request, user=Depends(require_role(["Manager", "Inventory"]))):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
@@ -216,7 +222,7 @@ async def update_stock_action(
     book_id: int,
     request: Request,
     delta: int = Form(...),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Inventory"]))
 ):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")

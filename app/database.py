@@ -55,8 +55,9 @@ def get_connection(role: str = "AUTH", employee_id: int = None):
             cursor = conn.cursor()
             cursor.execute("EXEC sp_set_session_context @key=N'EmployeeID', @value=?", employee_id)
             cursor.close()
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.warning(f"Không thể thiết lập SESSION_CONTEXT(EmployeeID={employee_id}): {e}")
     return conn
 
 def execute_query(sql: str, params: tuple = None, role: str = "AUTH", employee_id: int = None) -> list[dict]:

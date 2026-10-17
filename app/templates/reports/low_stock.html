@@ -56,7 +56,7 @@
                     <th class="text-end">Đơn Giá</th>
                     <th class="text-center" style="width: 140px;">Số Lượng Tồn</th>
                     <th class="text-center" style="width: 140px;">Tình Trạng</th>
-                    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                    {% if user.Role == 'Inventory' %}
                     <th class="text-center" style="width: 110px;">Thao Tác</th>
                     {% endif %}
                 </tr>
@@ -93,10 +93,10 @@
                                 <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Cần nhập</span>
                             {% endif %}
                         </td>
-                        {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                        {% if user.Role == 'Inventory' %}
                         <td class="text-center">
-                            <a href="/books/{{ book.BookID }}/edit" class="btn btn-outline-primary btn-sm" title="Điều chỉnh thông tin và kho">
-                                <i class="bi bi-pencil-square me-1"></i>Nhập kho
+                            <a href="/books/{{ book.BookID }}/edit" class="btn btn-outline-success btn-sm" title="Nhập kho bổ sung">
+                                <i class="bi bi-box-seam me-1"></i>Nhập kho
                             </a>
                         </td>
                         {% endif %}
@@ -104,7 +104,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-success">
+                        <td colspan="{% if user.Role == 'Inventory' %}7{% else %}6{% endif %}" class="text-center py-4 text-success">
                             <i class="bi bi-check-circle fs-2 d-block mb-2"></i>
                             Tất cả sách hiện tại đều có số lượng tồn trên {{ threshold }} cuốn. Tình trạng kho an toàn!
                         </td>

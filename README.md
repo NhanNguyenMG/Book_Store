@@ -21,12 +21,12 @@ Toàn bộ kịch bản SQL được lưu trữ tại thư mục `database/` g�
 | 01 | `01_create_database.sql` | Khởi tạo CSDL `BookStore` với collation chuẩn tiếng Việt `Vietnamese_CI_AS`. |
 | 02 | `02_create_tables.sql` | Thiết kế 9 bảng chuẩn 3NF: `Genres`, `Author`, `Publisher`, `Employee`, `Customer`, `Book`, `Orders`, `OrderDetails`, `AuditLog`. |
 | 03 | `03_sample_data.sql` | Nạp dữ liệu mẫu thực tế: 6 thể loại, 19 tác giả, 5 NXB, 4 nhân viên (mật khẩu hash PBKDF2), 8 khách hàng, 35 đầu sách, 16 hóa đơn mẫu. |
-| 04 | `04_constraints.sql` | **21 ràng buộc toàn vẹn**: 8 `CHECK` (giá > 0, tồn >= 0, số lượng > 0, điểm >= 0, định dạng email/phone), 4 `UNIQUE` (username, email, phone, tên thể loại), 9 `DEFAULT`. |
+| 04 | `04_constraints.sql` | **21 ràng buộc toàn vẹn**: 11 `CHECK` (giá > 0, tồn >= 0, số lượng bán > 0, đơn giá >= 0, điểm thưởng >= 0, định dạng SĐT, năm sinh tác giả, vai trò nhân viên, trạng thái đơn, thanh toán, loại hành động audit), 4 `UNIQUE` (tên thể loại, SĐT NXB, username nhân viên, SĐT khách hàng), 6 `DEFAULT`. |
 | 05 | `05_indexes.sql` | **6 chỉ mục Non-Clustered (`IX_`)** tối ưu hiệu năng lọc/tìm kiếm và tổng hợp báo cáo. |
 | 06 | `06_functions.sql` | **5 UDFs**: 3 Scalar Functions (`fn_GetOrderTotal`, `fn_CalculateRewardPoints`, `fn_GetCustomerTier`) + 2 Inline Table-Valued Functions (`fn_GetBooksByGenre`, `fn_GetLowStockBooks`). |
 | 07 | `07_views.sql` | **6 Views nghiệp vụ**: `vw_BookCatalog`, `vw_OrderSummary`, `vw_TopSellingBooks`, `vw_MonthlyRevenue`, `vw_CustomerSummary`, `vw_EmployeeInfo`. |
-| 08 | `08_procedures.sql` | **6 Stored Procedures nghiệp vụ** (`sp_Login`, `sp_CreateOrder`, `sp_CancelOrder`, `sp_UpdateBookStock`, `sp_SearchBooks`, `sp_GetRevenueReport`) + Hệ thống Stored Procedures CRUD cho các thực thể. |
-| 09 | `09_triggers.sql` | **6 Database Triggers**: Tự động trừ tồn kho khi xuất hóa đơn, tích lũy điểm thưởng thành viên, hoàn kho và trừ điểm khi hủy đơn, chặn sửa hóa đơn đã hoàn tất, tự động ghi nhật ký `AuditLog` khi sửa giá sách và cập nhật nhân viên. |
+| 08 | `08_procedures.sql` | **33 Stored Procedures**: gồm 6 Stored Procedures nghiệp vụ (`sp_Login`, `sp_CreateOrder`, `sp_CancelOrder`, `sp_UpdateBookStock`, `sp_SearchBooks`, `sp_GetRevenueReport`) và 27 Stored Procedures CRUD cho các bảng thực thể. |
+| 09 | `09_triggers.sql` | **6 Database Triggers**: Tự động trừ tồn kho khi xuất hóa đơn, tích lũy điểm thưởng thành viên, hoàn kho và trừ điểm khi hủy đơn, chặn sửa hóa đơn đã hoàn tất, tự động ghi nhật ký kiểm toán `trg_Book_Audit` khi sửa giá sách và `trg_Employee_Audit` khi cập nhật nhân viên. |
 | 10 | `10_transactions.sql` | **5 kịch bản Giao dịch (Transactions)**: Xử lý giao dịch bán hàng, điều chỉnh kho, bảo vệ tính nhất quán dữ liệu có đầy đủ các nhánh `COMMIT TRAN` và `ROLLBACK TRAN`. |
 | 11 | `11_security.sql` | **Phân quyền bảo mật (Security)**: Thiết lập 5 Login/User và 5 Database Roles (`role_admin`, `role_manager`, `role_sales`, `role_inventory`, `role_auth`) tuân thủ nguyên tắc đặc quyền tối thiểu (Least Privilege) và phân nhiệm (Separation of Duties). |
 | 12 | `12_concurrency_demo.sql` | Kịch bản mô phỏng tranh chấp đồng thời: 2 phiên cùng mua cuốn sách cuối cùng, Deadlock, so sánh mức độ cô lập (Isolation Levels) và quy trình Backup/Restore CSDL. |
@@ -50,7 +50,7 @@ Toàn bộ kịch bản SQL được lưu trữ tại thư mục `database/` g�
 4. **Quản lý Danh mục Sách & Kho**:
    - Lọc sách theo từ khóa tựa sách/tác giả, thể loại, khoảng giá và trạng thái tồn kho (`sp_SearchBooks`).
    - Thêm mới, chỉnh sửa thông tin sách, cập nhật số lượng tồn kho.
-   - Ghi nhận lịch sử kiểm toán tự động qua Trigger `trg_AuditBookPrice` khi đơn giá sách thay đổi.
+   - Ghi nhận lịch sử kiểm toán tự động qua Trigger `trg_Book_Audit` khi đơn giá sách thay đổi.
 5. **Quản lý Thể loại, Tác giả, Nhà xuất bản**:
    - Giao diện quản lý CRUD trực quan thông qua các Stored Procedures tương ứng.
 6. **Quản lý Khách hàng & Thành viên**:
@@ -59,7 +59,7 @@ Toàn bộ kịch bản SQL được lưu trữ tại thư mục `database/` g�
    - Xem chi tiết lịch sử mua hàng của từng khách hàng.
 7. **Quản trị Nhân viên**:
    - Dành riêng cho vai trò `Admin`: Thêm tài khoản nhân viên, đổi vai trò, đổi mật khẩu (mã hóa PBKDF2).
-   - Trigger `trg_AuditEmployee` tự động ghi nhận các thay đổi vai trò hoặc tài khoản vào `AuditLog`.
+   - Trigger `trg_Employee_Audit` tự động ghi nhận các thay đổi vai trò hoặc tài khoản vào `AuditLog`.
 8. **Báo cáo & Thống kê**:
    - **Báo cáo doanh thu**: Lọc theo khoảng thời gian (`sp_GetRevenueReport`) và tổng hợp doanh thu theo tháng (View `vw_MonthlyRevenue`).
    - **Top sách bán chạy**: Xếp hạng các đầu sách có doanh số và doanh thu cao nhất (View `vw_TopSellingBooks`).
@@ -93,12 +93,20 @@ Tạo tệp `.env` tại thư mục gốc dự án (sao chép từ `.env.example
 DB_SERVER=.\SQLEXPRESS
 DB_NAME=BookStore
 
-# Chế độ kết nối: WINDOWS_AUTH (mặc định) hoặc SQL_LOGIN
+# Chế độ kết nối: WINDOWS_AUTH (mặc định) hoặc SQL_LOGIN (khuyến nghị khi demo phân quyền)
 DB_AUTH_MODE=WINDOWS_AUTH
 
-# Dùng khi chuyển sang DB_AUTH_MODE=SQL_LOGIN
-DB_USER=login_auth
-DB_PASSWORD=AuthLogin@123
+# Dùng khi chuyển sang DB_AUTH_MODE=SQL_LOGIN (áp dụng phân quyền Database Roles)
+DB_USER_ADMIN=login_admin
+DB_PASS_ADMIN=BookStore@Admin123
+DB_USER_MANAGER=login_manager
+DB_PASS_MANAGER=BookStore@Manager123
+DB_USER_SALES=login_sales
+DB_PASS_SALES=BookStore@Sales123
+DB_USER_INVENTORY=login_inventory
+DB_PASS_INVENTORY=BookStore@Inventory123
+DB_USER_AUTH=login_auth
+DB_PASS_AUTH=BookStore@Auth123
 
 # Khóa bí mật cho Session Cookie
 SESSION_SECRET_KEY=bookstore_super_secret_key_dbms_2026

@@ -8,7 +8,7 @@
         <h3 class="fw-bold mb-0">Danh Mục Sách</h3>
         <p class="text-muted small mb-0">Tra cứu, quản lý thông tin sách và kiểm soát tồn kho</p>
     </div>
-    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    {% if user.Role in ['Manager', 'Inventory'] %}
     <a href="/books/create" class="btn btn-primary btn-sm px-3 shadow-sm">
         <i class="bi bi-plus-lg me-1"></i> Thêm Sách Mới
     </a>
@@ -78,7 +78,7 @@
                     <th>Nhà Xuất Bản</th>
                     <th class="text-end">Đơn Giá</th>
                     <th class="text-center">Tồn Kho</th>
-                    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                    {% if user.Role in ['Manager', 'Inventory'] %}
                     <th class="text-center" style="width: 140px;">Thao Tác</th>
                     {% endif %}
                 </tr>
@@ -104,12 +104,14 @@
                                 </span>
                             {% endif %}
                         </td>
-                        {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                        {% if user.Role in ['Manager', 'Inventory'] %}
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
+                                {% if user.Role == 'Inventory' %}
                                 <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#stockModal{{ b.BookID }}" title="Điều chỉnh tồn kho">
                                     <i class="bi bi-box-seam"></i>
                                 </button>
+                                {% endif %}
                                 <a href="/books/{{ b.BookID }}/edit" class="btn btn-outline-primary" title="Chỉnh sửa">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -118,6 +120,7 @@
                                 </button>
                             </div>
 
+                            {% if user.Role == 'Inventory' %}
                             <!-- Stock Adjustment Modal -->
                             <div class="modal fade" id="stockModal{{ b.BookID }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -142,6 +145,7 @@
                                     </div>
                                 </div>
                             </div>
+                            {% endif %}
 
                             <!-- Delete Modal -->
                             <div class="modal fade" id="deleteModal{{ b.BookID }}" tabindex="-1" aria-hidden="true">

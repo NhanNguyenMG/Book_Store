@@ -73,10 +73,18 @@
                     </li>
                     {% endif %}
 
-                    {% if user.Role in ['Admin', 'Manager'] %}
+                    {% if user.Role == 'Admin' %}
                     <li class="nav-item">
                         <a class="nav-link {% if active_nav == 'employees' %}active{% endif %}" href="/employees">
                             <i class="bi bi-person-badge me-1"></i>Nhân viên
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if user.Role == 'Inventory' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_nav == 'reports' %}active{% endif %}" href="/reports/low-stock">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Cảnh báo tồn kho
                         </a>
                     </li>
                     {% endif %}
@@ -90,8 +98,10 @@
                             <li><a class="dropdown-item" href="/reports/revenue"><i class="bi bi-cash-stack me-2 text-success"></i>Báo cáo doanh thu</a></li>
                             <li><a class="dropdown-item" href="/reports/top-selling"><i class="bi bi-trophy me-2 text-warning"></i>Top sách bán chạy</a></li>
                             <li><a class="dropdown-item" href="/reports/low-stock"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Cảnh báo tồn kho thấp</a></li>
+                            {% if user.Role == 'Admin' %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/reports/audit-logs"><i class="bi bi-shield-check me-2 text-info"></i>Nhật ký hệ thống (AuditLog)</a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}

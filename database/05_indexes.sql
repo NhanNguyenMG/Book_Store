@@ -29,7 +29,7 @@ BEGIN
 END
 GO
 
--- 5. Composite covering index for genre filtering
+-- 5. Single-key covering index with INCLUDE columns for genre filtering
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Book_GenreID' AND object_id = OBJECT_ID(N'dbo.Book'))
 BEGIN
     CREATE NONCLUSTERED INDEX IX_Book_GenreID ON dbo.Book (GenreID) INCLUDE (Title, Price, StockQuantity);

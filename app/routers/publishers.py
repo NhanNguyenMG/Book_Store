@@ -30,7 +30,7 @@ async def create_publisher_action(
     publisher_name: str = Form(...),
     address: str = Form(None),
     phone: str = Form(None),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     try:
@@ -46,7 +46,7 @@ async def edit_publisher_action(
     publisher_name: str = Form(...),
     address: str = Form(None),
     phone: str = Form(None),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     try:
@@ -59,7 +59,7 @@ async def edit_publisher_action(
 async def delete_publisher_action(
     publisher_id: int,
     request: Request,
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     try:
@@ -74,7 +74,7 @@ async def quick_create_publisher(
     publisher_name: str = Form(...),
     address: str = Form(None),
     phone: str = Form(None),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     name = publisher_name.strip()

@@ -65,7 +65,7 @@ BEGIN
         INNER JOIN inserted i ON od.OrderID = i.OrderID
         INNER JOIN deleted d ON i.OrderID = d.OrderID
         WHERE i.Status = 'Cancelled'
-          AND d.Status = 'Completed'
+          AND d.Status IN ('Completed', 'Pending')
         GROUP BY od.BookID
     ) item ON b.BookID = item.BookID;
 
@@ -114,17 +114,47 @@ BEGIN
 END;
 GO
 
--- 5. Audit changes to book prices or deleted books
+-- 5. Audit changes to book prices, stock quantities, insertions, and deletions
 CREATE OR ALTER TRIGGER dbo.trg_Book_Audit
 ON dbo.Book
-AFTER UPDATE, DELETE
+AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    DECLARE @EmpID INT = TRY_CAST(SESSION_CONTEXT(N'EmployeeID') AS INT);
     DECLARE @User VARCHAR(100);
-    SET @User = COALESCE(CAST(SESSION_CONTEXT(N'EmployeeID') AS VARCHAR(100)), SUSER_SNAME());
 
+    IF @EmpID IS NOT NULL
+    BEGIN
+        SELECT @User = Username + ' (ID ' + CAST(EmployeeID AS VARCHAR(10)) + ')'
+        FROM dbo.Employee
+        WHERE EmployeeID = @EmpID;
+
+        IF @User IS NULL
+            SET @User = 'Nhân viên ID ' + CAST(@EmpID AS VARCHAR(10));
+    END
+    ELSE
+    BEGIN
+        SET @User = '[Ngoài ứng dụng] ' + SUSER_SNAME();
+    END
+
+    -- 5.1. Log newly inserted books
+    IF EXISTS (SELECT 1 FROM inserted) AND NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
+        SELECT 
+            'Book',
+            'INSERT',
+            CAST(i.BookID AS VARCHAR(50)),
+            @User,
+            GETDATE(),
+            NULL,
+            N'Title: ' + i.Title + N', Price: ' + CAST(i.Price AS NVARCHAR(50)) + N', Stock: ' + CAST(i.StockQuantity AS NVARCHAR(50))
+        FROM inserted i;
+    END
+
+    -- 5.2. Log price updates
     IF UPDATE(Price)
     BEGIN
         INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
@@ -141,6 +171,24 @@ BEGIN
         WHERE i.Price <> d.Price;
     END
 
+    -- 5.3. Log inventory stock updates
+    IF UPDATE(StockQuantity)
+    BEGIN
+        INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
+        SELECT 
+            'Book',
+            'UPDATE',
+            CAST(i.BookID AS VARCHAR(50)),
+            @User,
+            GETDATE(),
+            N'Stock: ' + CAST(d.StockQuantity AS NVARCHAR(50)),
+            N'Stock: ' + CAST(i.StockQuantity AS NVARCHAR(50))
+        FROM inserted i
+        INNER JOIN deleted d ON i.BookID = d.BookID
+        WHERE i.StockQuantity <> d.StockQuantity;
+    END
+
+    -- 5.4. Log deleted books
     IF NOT EXISTS (SELECT 1 FROM inserted) AND EXISTS (SELECT 1 FROM deleted)
     BEGIN
         INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
@@ -150,25 +198,55 @@ BEGIN
             CAST(d.BookID AS VARCHAR(50)),
             @User,
             GETDATE(),
-            N'Title: ' + d.Title + N', Price: ' + CAST(d.Price AS NVARCHAR(50)),
+            N'Title: ' + d.Title + N', Price: ' + CAST(d.Price AS NVARCHAR(50)) + N', Stock: ' + CAST(d.StockQuantity AS NVARCHAR(50)),
             NULL
         FROM deleted d;
     END
 END;
 GO
 
--- 6. Audit changes to employee roles or password updates
+-- 6. Audit changes to employee insertions, roles, full names, password updates, and deletions
 CREATE OR ALTER TRIGGER dbo.trg_Employee_Audit
 ON dbo.Employee
-AFTER UPDATE, DELETE
+AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    DECLARE @EmpID INT = TRY_CAST(SESSION_CONTEXT(N'EmployeeID') AS INT);
     DECLARE @User VARCHAR(100);
-    SET @User = COALESCE(CAST(SESSION_CONTEXT(N'EmployeeID') AS VARCHAR(100)), SUSER_SNAME());
 
-    IF UPDATE(Role) OR UPDATE(Password)
+    IF @EmpID IS NOT NULL
+    BEGIN
+        SELECT @User = Username + ' (ID ' + CAST(EmployeeID AS VARCHAR(10)) + ')'
+        FROM dbo.Employee
+        WHERE EmployeeID = @EmpID;
+
+        IF @User IS NULL
+            SET @User = 'Nhân viên ID ' + CAST(@EmpID AS VARCHAR(10));
+    END
+    ELSE
+    BEGIN
+        SET @User = '[Ngoài ứng dụng] ' + SUSER_SNAME();
+    END
+
+    -- 6.1. Log newly created employees (Excludes password hash for security)
+    IF EXISTS (SELECT 1 FROM inserted) AND NOT EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
+        SELECT 
+            'Employee',
+            'INSERT',
+            CAST(i.EmployeeID AS VARCHAR(50)),
+            @User,
+            GETDATE(),
+            NULL,
+            N'Username: ' + i.Username + N', Họ tên: ' + i.FullName + N', Role: ' + i.Role
+        FROM inserted i;
+    END
+
+    -- 6.2. Log employee updates (Role, FullName, Password change flag)
+    IF UPDATE(Role) OR UPDATE(Password) OR UPDATE(FullName)
     BEGIN
         INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
         SELECT 
@@ -177,13 +255,17 @@ BEGIN
             CAST(i.EmployeeID AS VARCHAR(50)),
             @User,
             GETDATE(),
-            N'Role: ' + d.Role + CASE WHEN i.Password <> d.Password THEN N', PasswordChanged' ELSE N'' END,
-            N'Role: ' + i.Role + CASE WHEN i.Password <> d.Password THEN N', PasswordChanged' ELSE N'' END
+            N'Role: ' + d.Role + N', Họ tên: ' + d.FullName,
+            N'Role: ' + i.Role + N', Họ tên: ' + i.FullName
+                + CASE WHEN i.Password <> d.Password THEN N', [Đã đổi mật khẩu]' ELSE N'' END
         FROM inserted i
         INNER JOIN deleted d ON i.EmployeeID = d.EmployeeID
-        WHERE i.Role <> d.Role OR i.Password <> d.Password;
+        WHERE i.Role <> d.Role 
+           OR i.FullName <> d.FullName 
+           OR i.Password <> d.Password;
     END
 
+    -- 6.3. Log deleted employees
     IF NOT EXISTS (SELECT 1 FROM inserted) AND EXISTS (SELECT 1 FROM deleted)
     BEGIN
         INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
@@ -193,7 +275,7 @@ BEGIN
             CAST(d.EmployeeID AS VARCHAR(50)),
             @User,
             GETDATE(),
-            N'Username: ' + d.Username + N', Role: ' + d.Role,
+            N'Username: ' + d.Username + N', Họ tên: ' + d.FullName + N', Role: ' + d.Role,
             NULL
         FROM deleted d;
     END

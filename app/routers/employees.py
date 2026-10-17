@@ -9,7 +9,7 @@ router = APIRouter(prefix="/employees", tags=["Employees"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_employees(request: Request, user=Depends(require_role(["Admin", "Manager"]))):
+async def list_employees(request: Request, user=Depends(require_role(["Admin"]))):
     role = user.get("Role")
     employees = execute_sp("dbo.sp_Employee_GetAll", role=role)
     return templates.TemplateResponse("employees/index.html", {

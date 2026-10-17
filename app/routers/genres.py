@@ -28,7 +28,7 @@ async def list_genres(request: Request):
 async def create_genre_action(
     request: Request,
     genre_name: str = Form(...),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     try:
@@ -42,7 +42,7 @@ async def edit_genre_action(
     genre_id: int,
     request: Request,
     genre_name: str = Form(...),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     try:
@@ -55,7 +55,7 @@ async def edit_genre_action(
 async def delete_genre_action(
     genre_id: int,
     request: Request,
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     try:
@@ -68,7 +68,7 @@ async def delete_genre_action(
 async def quick_create_genre(
     request: Request,
     genre_name: str = Form(...),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager", "Inventory"]))
 ):
     role = user.get("Role")
     name = genre_name.strip()

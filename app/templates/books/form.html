@@ -94,8 +94,12 @@
 
                         <div class="col-md-6">
                             <label for="stock_quantity" class="form-label fw-semibold small">Số lượng tồn kho <span class="text-danger">*</span></label>
-                            <input type="number" min="0" class="form-control" id="stock_quantity" name="stock_quantity" required value="{{ book.StockQuantity if book else 0 }}">
+                            <input type="number" min="0" class="form-control" id="stock_quantity" name="stock_quantity" required value="{{ book.StockQuantity if book else 0 }}" {% if book and book.BookID and user.Role != 'Inventory' %}readonly disabled-readonly class="bg-light"{% endif %}>
+                            {% if book and book.BookID and user.Role != 'Inventory' %}
+                            <div class="form-text text-warning small"><i class="bi bi-shield-lock me-1"></i>Chỉ Thủ kho (Inventory) mới có thẩm quyền điều chỉnh số lượng tồn kho.</div>
+                            {% else %}
                             <div class="form-text small">Tồn kho không được âm (ràng buộc CK_Book_Stock).</div>
+                            {% endif %}
                         </div>
                     </div>
 
