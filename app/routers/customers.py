@@ -45,19 +45,18 @@ def create_customer_action(
     request: Request,
     customer_name: str = Form(...),
     phone: str = Form(...),
-    reward_points: int = Form(0),
     user=Depends(require_role(["Manager", "Sales"]))
 ):
     role = user.get("Role")
     try:
-        execute_sp("dbo.sp_Customer_Insert", (customer_name.strip(), phone.strip(), reward_points, None), role=role, fetch_result=False)
+        execute_sp("dbo.sp_Customer_Insert", (customer_name.strip(), phone.strip(), None), role=role, fetch_result=False)
         return RedirectResponse(url="/customers?msg=Thêm khách hàng thành công!&msg_type=success", status_code=303)
     except Exception as e:
         return templates.TemplateResponse("customers/form.html", {
             "request": request,
             "user": user,
             "active_nav": "customers",
-            "customer": {"CustomerName": customer_name, "Phone": phone, "RewardPoints": reward_points},
+            "customer": {"CustomerName": customer_name, "Phone": phone, "RewardPoints": 0},
             "error": str(e)
         })
 

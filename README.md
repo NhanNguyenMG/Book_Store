@@ -16,7 +16,7 @@ Hệ thống được thiết kế theo mô hình kiến trúc phân tầng tậ
 
 ### 2.1. Backend & Thư viện (Python)
 Theo quy chuẩn trong [`requirements.txt`](requirements.txt):
-- **Ngôn ngữ**: Python 3.10+ (Đã kiểm thử tương thích hoàn toàn trên Python 3.14)
+- **Ngôn ngữ**: Python 3.10+ (Đã kiểm thử thực tế trên môi trường Python 3.14)
 - **Web Framework**: `fastapi==0.142.2`
 - **ASGI Web Server**: `uvicorn==0.54.0`
 - **Database Driver**: `pyodbc==5.3.0` (Kết nối SQL Server qua ODBC Driver 17/18, truy vấn tham số hóa 100%)
@@ -53,10 +53,10 @@ Toàn bộ kịch bản SQL được lưu trữ tại thư mục `database/` g�
 | 05 | `05_indexes.sql` | **Bắt buộc** | **6 chỉ mục Non-Clustered (`IX_`)** tối ưu hiệu năng tìm kiếm sách, lọc đơn hàng và tổng hợp báo cáo. |
 | 06 | `06_functions.sql` | **Bắt buộc** | **5 UDFs**: 3 Scalar Functions (`fn_GetOrderTotal`, `fn_CalculateRewardPoints`, `fn_GetCustomerTier`) + 2 Inline Table-Valued Functions (`fn_GetBooksByGenre`, `fn_GetLowStockBooks`). |
 | 07 | `07_views.sql` | **Bắt buộc** | **6 Views nghiệp vụ**: `vw_BookCatalog`, `vw_OrderSummary`, `vw_TopSellingBooks`, `vw_MonthlyRevenue`, `vw_CustomerSummary`, `vw_EmployeeInfo`. |
-| 08 | `08_procedures.sql` | **Bắt buộc** | **33 Stored Procedures**: Gồm 6 SP nghiệp vụ lõi (`sp_Login`, `sp_CreateOrder`, `sp_CancelOrder`, `sp_UpdateBookStock`, `sp_SearchBooks`, `sp_GetRevenueReport`) và 27 SP CRUD cho các bảng thực thể. Tồn kho được cô lập: `sp_Book_Insert` mặc định kho = 0, `sp_Book_Update` không nhận tham số tồn kho; mọi biến động tồn kho đi qua `sp_UpdateBookStock`. |
+| 08 | `08_procedures.sql` | **Bắt buộc** | **33 Stored Procedures**: Gồm 6 SP nghiệp vụ lõi (`sp_Login`, `sp_CreateOrder`, `sp_CancelOrder`, `sp_UpdateBookStock`, `sp_SearchBooks`, `sp_GetRevenueReport`) và 27 SP CRUD cho các bảng thực thể. Tồn kho và điểm thưởng được bảo vệ: `sp_Book_Insert` mặc định kho = 0, `sp_Book_Update` không nhận tham số tồn kho (mọi biến động tồn kho đi qua `sp_UpdateBookStock`); `sp_Customer_Insert` mặc định điểm thưởng = 0 (điểm chỉ được tích lũy tự động qua Trigger khi hoàn tất đơn hàng). |
 | 09 | `09_triggers.sql` | **Bắt buộc** | **6 Database Triggers**: Tự động trừ tồn kho khi bán hàng, cộng điểm thưởng khi đơn hoàn tất, hoàn kho và khấu trừ điểm khi hủy đơn, chặn sửa chi tiết đơn hàng đã chốt, ghi nhật ký kiểm toán `trg_Book_Audit` (INSERT/UPDATE/DELETE, đổi giá, đổi tồn kho thủ công) và `trg_Employee_Audit` (nhân viên, đổi role, đổi mật khẩu). |
 | 10 | `10_transactions.sql` | *Minh họa (Không bắt buộc)* | **5 kịch bản Giao dịch (Transactions)**: Xử lý giao dịch bán hàng, hủy đơn, phục hồi trạng thái (`COMMIT` / `ROLLBACK`). *(Lưu ý: File này thực thi các đơn hàng và thao tác thay đổi dữ liệu mẫu; chỉ chạy khi cần demo kiểm thử tính nguyên tử/nhất quán).* |
-| 11 | `11_security.sql` | **Bắt buộc** | **Phân quyền bảo mật (Security)**: Thiết lập 5 Login/User và 5 Database Roles (`role_admin`, `role_manager`, `role_sales`, `role_inventory`, `role_auth`) tuân thủ nghiêm ngặt nguyên tắc đặc quyền tối thiểu (Least Privilege) và phân nhiệm (Separation of Duties). Cấm triệt để DML trực tiếp, khóa quyền sửa/xóa `AuditLog`. |
+| 11 | `11_security.sql` | **Bắt buộc** | **Phân quyền bảo mật (Security)**: Thiết lập 5 Login/User và 5 Database Roles (`role_admin`, `role_manager`, `role_sales`, `role_inventory`, `role_auth`) tuân thủ nghiêm ngặt nguyên tắc đặc quyền tối thiểu (Least Privilege) và phân nhiệm (Separation of Duties). Cấm DML trực tiếp đối với các vai trò nghiệp vụ (Manager, Sales, Inventory), khóa quyền sửa/xóa `AuditLog`. |
 | 12 | `12_concurrency_demo.sql` | *Minh họa (Không bắt buộc)* | **Kịch bản kiểm thử Tranh chấp đồng thời**: Mô phỏng 2 phiên cùng mua cuốn sách cuối cùng, Deadlock, so sánh các mức cô lập (Isolation Levels). *(Lưu ý: File này chứa lệnh giảm tồn kho về 1 và giữ khóa giao dịch; chỉ chạy trong các phiên SSMS riêng biệt để demo).* |
 
 ---
@@ -81,8 +81,8 @@ Hệ thống áp dụng mô hình **Phòng thủ đa lớp (Defense in Depth)**:
 | **Xem Thể loại / Tác giả / NXB** | `/genres`, `/authors`, `/publishers` | `Admin`, `Manager`, `Inventory` | `sp_*_GetAll`, `Genres`, `Author`, `Publisher` | ✔ *(Xem)* | ✔ | ❌ *(Chỉ xem khi bán)* | ✔ *(Xem)* |
 | **Thêm / Sửa / Xóa Danh mục** | `/genres/*`, `/authors/*`, `/publishers/*` | `Manager` | `sp_*_Insert/Update/Delete` (Admin bị `DENY`) | ❌ | ✔ | ❌ | ❌ |
 | **Xem danh sách Khách hàng** | `/customers`, `/customers/{id}` | `Admin`, `Manager`, `Sales` | `Customer`, `sp_Customer_GetAll/GetById` | ✔ *(Xem)* | ✔ | ✔ | ❌ |
-| **Thêm / Sửa Khách hàng** | `/customers/create`, `/edit` | `Manager`, `Sales` | `sp_Customer_Insert/Update` (Admin bị `DENY`) | ❌ | ✔ | ✔ | ❌ |
-| **Xóa Khách hàng** | `/customers/{id}/delete` | `Manager` | `sp_Customer_Delete` (Admin, Sales bị `DENY`) | ❌ | ✔ | ❌ | ❌ |
+| **Thêm / Sửa Khách hàng** | `/customers/create`, `/edit` | `Manager`, `Sales` | `sp_Customer_Insert/Update` (Admin bị `DENY`, tạo mới mặc định điểm = 0) | ❌ | ✔ | ✔ | ❌ |
+| **Xóa Khách hàng** | `/customers/{id}/delete` | `Manager` | `sp_Customer_Delete` (Admin bị `DENY`, Sales chưa được cấp quyền) | ❌ | ✔ | ❌ | ❌ |
 | **Quản trị Nhân viên** | `/employees/**` | `Admin` | `sp_Employee_*`, `Employee` (Role khác bị `DENY`) | ✔ | ❌ | ❌ | ❌ |
 | **Báo cáo Doanh thu** | `/reports/revenue` | `Admin`, `Manager` | `sp_GetRevenueReport`, `vw_MonthlyRevenue` | ✔ | ✔ | ❌ | ❌ |
 | **Top Sách Bán Chạy** | `/reports/top-selling` | `Admin`, `Manager` | `vw_TopSellingBooks` | ✔ | ✔ | ❌ | ❌ |
@@ -103,7 +103,7 @@ Hệ thống áp dụng mô hình **Phòng thủ đa lớp (Defense in Depth)**:
 ### 5.1. Cơ chế Mã hóa Mật khẩu (bcrypt)
 - Ứng dụng sử dụng thư viện `bcrypt==5.0.0` với cấu hình muối ngẫu nhiên 12 vòng lặp (`bcrypt.gensalt(rounds=12)`).
 - Chuỗi mã hóa sinh ra có định dạng `$2b$12$...` (chiều dài 60 ký tự, lưu trữ an toàn trong cột `Password VARCHAR(255)`).
-- **Kiểm soát độ dài**: Thuật toán bcrypt giới hạn xử lý tối đa 72 bytes. Hệ thống kiểm tra chặt chẽ độ dài chuỗi UTF-8 tại cả giao diện người dùng (`maxlength="72"`) và tầng xử lý backend trước khi gọi hàm băm nhằm ngăn ngừa lỗi tràn bộ đệm.
+- **Kiểm soát độ dài**: Thuật toán bcrypt giới hạn xử lý tối đa 72 bytes. Hệ thống kiểm tra chặt chẽ độ dài chuỗi UTF-8 tại cả giao diện người dùng (`maxlength="72"`) và tầng xử lý backend trước khi gọi hàm băm nhằm tránh việc mật khẩu bị cắt ngắn hoặc báo lỗi.
 - Hàm kiểm tra mật khẩu từ chối tất cả các định dạng không hợp chuẩn bcrypt hoặc chuỗi rỗng.
 
 ### 5.2. Quản lý Phiên làm việc (Session Management)

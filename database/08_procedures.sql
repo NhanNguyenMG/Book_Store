@@ -553,7 +553,6 @@ GO
 CREATE OR ALTER PROCEDURE dbo.sp_Customer_Insert
     @CustomerName NVARCHAR(100),
     @Phone VARCHAR(15),
-    @RewardPoints INT = 0,
     @NewID INT OUTPUT
 AS
 BEGIN
@@ -562,7 +561,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRAN;
         INSERT INTO dbo.Customer (CustomerName, Phone, RewardPoints)
-        VALUES (@CustomerName, @Phone, @RewardPoints);
+        VALUES (@CustomerName, @Phone, 0);
         SET @NewID = SCOPE_IDENTITY();
         COMMIT TRAN;
     END TRY

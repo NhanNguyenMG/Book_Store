@@ -27,18 +27,11 @@
                         <input type="text" class="form-control" id="customer_name" name="customer_name" required value="{{ customer.CustomerName if customer else '' }}" placeholder="Ví dụ: Nguyễn Văn A">
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="phone" class="form-label fw-semibold small">Số điện thoại <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="phone" name="phone" required value="{{ customer.Phone if customer else '' }}" placeholder="Ví dụ: 0901234567">
-                        <div class="form-text small">Số điện thoại chỉ gồm chữ số (9 đến 11 số), dùng để tra cứu tích điểm.</div>
+                        <div class="form-text small">Số điện thoại chỉ gồm chữ số (9 đến 11 số), dùng để tra cứu tích điểm (điểm khởi tạo mặc định là 0).</div>
                     </div>
-
-                    {% if not customer or not customer.CustomerID %}
-                    <div class="mb-4">
-                        <label for="reward_points" class="form-label fw-semibold small">Điểm tích lũy ban đầu</label>
-                        <input type="number" min="0" class="form-control" id="reward_points" name="reward_points" value="0">
-                    </div>
-                    {% endif %}
 
                     <div class="d-flex justify-content-end gap-2 pt-2 border-top">
                         <a href="/customers" class="btn btn-secondary px-4">Hủy</a>
