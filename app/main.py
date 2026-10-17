@@ -14,9 +14,10 @@ load_dotenv()
 
 app = FastAPI(title="Hệ Thống Quản Lý Nhà Sách", description="Hệ thống quản lý vận hành và bán hàng nhà sách")
 
-# Cấu hình Secret Key cho SessionMiddleware
+# Cấu hình Secret Key và thời gian sống phiên cho SessionMiddleware
 SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "bookstore_super_secret_key_dbms_2026")
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=86400)
+SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", "28800"))  # Mặc định 8 tiếng (1 ca làm việc)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=SESSION_MAX_AGE)
 
 # Mount thư mục Static files (CSS, JS)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -36,14 +37,14 @@ app.include_router(authors.router)
 app.include_router(reports.router)
 
 @app.get("/", response_class=RedirectResponse)
-async def root_redirect(request: Request):
+def root_redirect(request: Request):
     user = get_current_user(request)
     if user:
         return RedirectResponse(url="/home", status_code=303)
     return RedirectResponse(url="/login", status_code=303)
 
 @app.get("/home", response_class=HTMLResponse)
-async def home_dashboard(request: Request):
+def home_dashboard(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)

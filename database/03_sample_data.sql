@@ -55,15 +55,15 @@ BEGIN
 END
 GO
 
--- Employee passwords hashed with pbkdf2_hmac sha256 (format: salt$hash)
+-- Employee passwords hashed with bcrypt (format: $2b$12$...)
 IF NOT EXISTS (SELECT 1 FROM dbo.Employee)
 BEGIN
     SET IDENTITY_INSERT dbo.Employee ON;
     INSERT INTO dbo.Employee (EmployeeID, FullName, Role, Username, Password) VALUES
-        (1, N'Nguyễn Văn Quản Trị', 'Admin', 'admin', '7bb000f8c2d6e2e665d9a845d3b505bf$9c0734e0f6df5ef3ede8074fa4777187e03112f3f88c940ed26e289f6bae58bd'),
-        (2, N'Trần Thị Quản Lý', 'Manager', 'manager', 'e3266bdcf0335436d7c77be71e2dffc2$17bb85e7ad6f14003212868feb0501a53d5751fff4503af114571bfee3d7654a'),
-        (3, N'Lê Văn Bán Hàng', 'Sales', 'sales', 'a346de60cea1ad76eeff43985765e0f6$1ebc34c10e5a5c895dcd769d01306f6ca157a4524866da75006a787cabb60d4d'),
-        (4, N'Phạm Văn Thủ Kho', 'Inventory', 'inventory', 'a139d542224bb0f3f6496c9775ff99f4$bc706004a05497ce413c887e33b5c82d4c7bc306efec8ebca63bac8e8b33448f');
+        (1, N'Nguyễn Văn Quản Trị', 'Admin', 'admin', '$2b$12$qOLbhgLe4cy3hmjF6zyDtOlk6aLO7iVh8F9GN1H4mKwnWJ01LEyAa'),
+        (2, N'Trần Thị Quản Lý', 'Manager', 'manager', '$2b$12$aPTJ8mSoSaGKdjcYlhBg8O9KHkNJNZ5iS1QKNZ.qH5rtH0lWwtDV.'),
+        (3, N'Lê Văn Bán Hàng', 'Sales', 'sales', '$2b$12$ucFtqGtGJSgR3cdw2btVG.vkfDmpc5s/JmpkAraxAsTn//9TIj1.u'),
+        (4, N'Phạm Văn Thủ Kho', 'Inventory', 'inventory', '$2b$12$RbbvWJioMHeSgopk6xNBNuspZ8DybuYZsKAVIr19OzmZl0xOhC7EW');
     SET IDENTITY_INSERT dbo.Employee OFF;
 END
 GO

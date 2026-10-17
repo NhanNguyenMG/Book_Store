@@ -8,7 +8,7 @@ router = APIRouter(prefix="/genres", tags=["Genres"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_genres(request: Request):
+def list_genres(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login?msg=Vui lòng đăng nhập&msg_type=warning", status_code=303)
@@ -25,7 +25,7 @@ async def list_genres(request: Request):
     })
 
 @router.post("/create")
-async def create_genre_action(
+def create_genre_action(
     request: Request,
     genre_name: str = Form(...),
     user=Depends(require_role(["Manager"]))
@@ -38,7 +38,7 @@ async def create_genre_action(
         return RedirectResponse(url=f"/genres?msg=Lỗi: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{genre_id}/edit")
-async def edit_genre_action(
+def edit_genre_action(
     genre_id: int,
     request: Request,
     genre_name: str = Form(...),
@@ -52,7 +52,7 @@ async def edit_genre_action(
         return RedirectResponse(url=f"/genres?msg=Lỗi: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{genre_id}/delete")
-async def delete_genre_action(
+def delete_genre_action(
     genre_id: int,
     request: Request,
     user=Depends(require_role(["Manager"]))
@@ -65,7 +65,7 @@ async def delete_genre_action(
         return RedirectResponse(url=f"/genres?msg=Lỗi xóa thể loại: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/quick-create")
-async def quick_create_genre(
+def quick_create_genre(
     request: Request,
     genre_name: str = Form(...),
     user=Depends(require_role(["Manager"]))

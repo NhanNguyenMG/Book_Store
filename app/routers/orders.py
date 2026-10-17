@@ -8,7 +8,7 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_orders(
+def list_orders(
     request: Request,
     status_filter: str = None,
     order_id_filter: str = None,
@@ -45,7 +45,7 @@ async def list_orders(
     })
 
 @router.get("/create", response_class=HTMLResponse)
-async def create_order_page(request: Request, user=Depends(require_role(["Sales", "Manager"]))):
+def create_order_page(request: Request, user=Depends(require_role(["Sales", "Manager"]))):
     role = user.get("Role")
     # Only offer in-stock books for POS
     books = execute_query(
@@ -70,7 +70,7 @@ async def create_order_page(request: Request, user=Depends(require_role(["Sales"
     })
 
 @router.post("/create")
-async def create_order_action(
+def create_order_action(
     request: Request,
     customer_id: str = Form(None),
     payment_method: str = Form("Cash"),
@@ -116,7 +116,7 @@ async def create_order_action(
         })
 
 @router.get("/{order_id}", response_class=HTMLResponse)
-async def order_detail_page(order_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def order_detail_page(order_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
     role = user.get("Role")
     orders = execute_query(
         "SELECT * FROM dbo.vw_OrderSummary WHERE OrderID = ?",
@@ -149,7 +149,7 @@ async def order_detail_page(order_id: int, request: Request, user=Depends(requir
     })
 
 @router.post("/{order_id}/cancel")
-async def cancel_order_action(order_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def cancel_order_action(order_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:

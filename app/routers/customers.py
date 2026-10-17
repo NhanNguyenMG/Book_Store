@@ -8,7 +8,7 @@ router = APIRouter(prefix="/customers", tags=["Customers"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_customers(request: Request, search: str = None, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def list_customers(request: Request, search: str = None, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
     role = user.get("Role")
     if search and search.strip():
         term = f"%{search.strip()}%"
@@ -32,7 +32,7 @@ async def list_customers(request: Request, search: str = None, user=Depends(requ
     })
 
 @router.get("/create", response_class=HTMLResponse)
-async def create_customer_page(request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def create_customer_page(request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
     return templates.TemplateResponse("customers/form.html", {
         "request": request,
         "user": user,
@@ -41,7 +41,7 @@ async def create_customer_page(request: Request, user=Depends(require_role(["Adm
     })
 
 @router.post("/create")
-async def create_customer_action(
+def create_customer_action(
     request: Request,
     customer_name: str = Form(...),
     phone: str = Form(...),
@@ -62,7 +62,7 @@ async def create_customer_action(
         })
 
 @router.get("/{customer_id}", response_class=HTMLResponse)
-async def customer_detail(customer_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def customer_detail(customer_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
     role = user.get("Role")
     cust_list = execute_query(
         "SELECT * FROM dbo.vw_CustomerSummary WHERE CustomerID = ?",
@@ -87,7 +87,7 @@ async def customer_detail(customer_id: int, request: Request, user=Depends(requi
     })
 
 @router.get("/{customer_id}/edit", response_class=HTMLResponse)
-async def edit_customer_page(customer_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def edit_customer_page(customer_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
     role = user.get("Role")
     cust = execute_sp("dbo.sp_Customer_GetById", (customer_id,), role=role)
     if not cust:
@@ -101,7 +101,7 @@ async def edit_customer_page(customer_id: int, request: Request, user=Depends(re
     })
 
 @router.post("/{customer_id}/edit")
-async def edit_customer_action(
+def edit_customer_action(
     customer_id: int,
     request: Request,
     customer_name: str = Form(...),
@@ -122,7 +122,7 @@ async def edit_customer_action(
         })
 
 @router.post("/{customer_id}/delete")
-async def delete_customer_action(
+def delete_customer_action(
     customer_id: int,
     request: Request,
     user=Depends(require_role(["Admin", "Manager"]))

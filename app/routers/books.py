@@ -8,7 +8,7 @@ router = APIRouter(prefix="/books", tags=["Books"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_books(
+def list_books(
     request: Request,
     keyword: str = None,
     genre_id: str = None,
@@ -83,7 +83,7 @@ async def list_books(
     })
 
 @router.get("/create", response_class=HTMLResponse)
-async def create_book_page(request: Request, user=Depends(require_role(["Manager"]))):
+def create_book_page(request: Request, user=Depends(require_role(["Manager"]))):
     role = user.get("Role")
     genres = execute_query("SELECT GenreID, GenreName FROM dbo.Genres ORDER BY GenreName", role=role)
     authors = execute_query("SELECT AuthorID, AuthorName FROM dbo.Author ORDER BY AuthorName", role=role)
@@ -100,7 +100,7 @@ async def create_book_page(request: Request, user=Depends(require_role(["Manager
     })
 
 @router.post("/create")
-async def create_book_action(
+def create_book_action(
     request: Request,
     title: str = Form(...),
     genre_id: int = Form(...),
@@ -139,7 +139,7 @@ async def create_book_action(
         })
 
 @router.get("/{book_id}/edit", response_class=HTMLResponse)
-async def edit_book_page(book_id: int, request: Request, user=Depends(require_role(["Manager"]))):
+def edit_book_page(book_id: int, request: Request, user=Depends(require_role(["Manager"]))):
     role = user.get("Role")
     books = execute_sp("dbo.sp_Book_GetById", (book_id,), role=role)
     if not books or len(books) == 0:
@@ -160,7 +160,7 @@ async def edit_book_page(book_id: int, request: Request, user=Depends(require_ro
     })
 
 @router.post("/{book_id}/edit")
-async def edit_book_action(
+def edit_book_action(
     book_id: int,
     request: Request,
     title: str = Form(...),
@@ -202,7 +202,7 @@ async def edit_book_action(
         })
 
 @router.post("/{book_id}/delete")
-async def delete_book_action(book_id: int, request: Request, user=Depends(require_role(["Manager"]))):
+def delete_book_action(book_id: int, request: Request, user=Depends(require_role(["Manager"]))):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
@@ -212,7 +212,7 @@ async def delete_book_action(book_id: int, request: Request, user=Depends(requir
         return RedirectResponse(url=f"/books?msg=Lỗi khi xóa sách: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{book_id}/stock")
-async def update_stock_action(
+def update_stock_action(
     book_id: int,
     request: Request,
     delta: int = Form(...),

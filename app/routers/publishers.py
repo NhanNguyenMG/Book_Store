@@ -8,7 +8,7 @@ router = APIRouter(prefix="/publishers", tags=["Publishers"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_publishers(request: Request):
+def list_publishers(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login?msg=Vui lòng đăng nhập&msg_type=warning", status_code=303)
@@ -25,7 +25,7 @@ async def list_publishers(request: Request):
     })
 
 @router.post("/create")
-async def create_publisher_action(
+def create_publisher_action(
     request: Request,
     publisher_name: str = Form(...),
     address: str = Form(None),
@@ -40,7 +40,7 @@ async def create_publisher_action(
         return RedirectResponse(url=f"/publishers?msg=Lỗi: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{publisher_id}/edit")
-async def edit_publisher_action(
+def edit_publisher_action(
     publisher_id: int,
     request: Request,
     publisher_name: str = Form(...),
@@ -56,7 +56,7 @@ async def edit_publisher_action(
         return RedirectResponse(url=f"/publishers?msg=Lỗi: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{publisher_id}/delete")
-async def delete_publisher_action(
+def delete_publisher_action(
     publisher_id: int,
     request: Request,
     user=Depends(require_role(["Manager"]))
@@ -69,7 +69,7 @@ async def delete_publisher_action(
         return RedirectResponse(url=f"/publishers?msg=Lỗi xóa NXB: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/quick-create")
-async def quick_create_publisher(
+def quick_create_publisher(
     request: Request,
     publisher_name: str = Form(...),
     address: str = Form(None),
