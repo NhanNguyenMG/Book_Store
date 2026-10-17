@@ -32,7 +32,7 @@ def list_customers(request: Request, search: str = None, user=Depends(require_ro
     })
 
 @router.get("/create", response_class=HTMLResponse)
-def create_customer_page(request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def create_customer_page(request: Request, user=Depends(require_role(["Manager", "Sales"]))):
     return templates.TemplateResponse("customers/form.html", {
         "request": request,
         "user": user,
@@ -46,7 +46,7 @@ def create_customer_action(
     customer_name: str = Form(...),
     phone: str = Form(...),
     reward_points: int = Form(0),
-    user=Depends(require_role(["Admin", "Manager", "Sales"]))
+    user=Depends(require_role(["Manager", "Sales"]))
 ):
     role = user.get("Role")
     try:
@@ -87,7 +87,7 @@ def customer_detail(customer_id: int, request: Request, user=Depends(require_rol
     })
 
 @router.get("/{customer_id}/edit", response_class=HTMLResponse)
-def edit_customer_page(customer_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def edit_customer_page(customer_id: int, request: Request, user=Depends(require_role(["Manager", "Sales"]))):
     role = user.get("Role")
     cust = execute_sp("dbo.sp_Customer_GetById", (customer_id,), role=role)
     if not cust:
@@ -106,7 +106,7 @@ def edit_customer_action(
     request: Request,
     customer_name: str = Form(...),
     phone: str = Form(...),
-    user=Depends(require_role(["Admin", "Manager", "Sales"]))
+    user=Depends(require_role(["Manager", "Sales"]))
 ):
     role = user.get("Role")
     try:
@@ -125,7 +125,7 @@ def edit_customer_action(
 def delete_customer_action(
     customer_id: int,
     request: Request,
-    user=Depends(require_role(["Admin", "Manager"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:

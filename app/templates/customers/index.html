@@ -8,9 +8,11 @@
         <h3 class="fw-bold mb-0">Quản Lý Khách Hàng</h3>
         <p class="text-muted small mb-0">Danh sách khách hàng, số dư điểm thưởng và phân hạng thành viên</p>
     </div>
+    {% if user.Role in ['Manager', 'Sales'] %}
     <a href="/customers/create" class="btn btn-primary btn-sm px-3 shadow-sm">
         <i class="bi bi-person-plus me-1"></i> Thêm Khách Hàng
     </a>
+    {% endif %}
 </div>
 
 <!-- Search Bar -->
@@ -64,17 +66,19 @@
                                 <a href="/customers/{{ c.CustomerID }}" class="btn btn-outline-info" title="Xem lịch sử mua hàng">
                                     <i class="bi bi-clock-history"></i>
                                 </a>
+                                {% if user.Role in ['Manager', 'Sales'] %}
                                 <a href="/customers/{{ c.CustomerID }}/edit" class="btn btn-outline-primary" title="Chỉnh sửa">
-                                    <i class="bi bi-pencil"></i>
+                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                {% if user.Role in ['Admin', 'Manager'] %}
+                                {% endif %}
+                                {% if user.Role in ['Manager'] %}
                                 <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ c.CustomerID }}" title="Xóa">
-                                    <i class="bi bi-trash"></i>
+                                     <i class="bi bi-trash"></i>
                                 </button>
                                 {% endif %}
                             </div>
 
-                            {% if user.Role in ['Admin', 'Manager'] %}
+                            {% if user.Role in ['Manager'] %}
                             <!-- Delete Modal -->
                             <div class="modal fade" id="deleteModal{{ c.CustomerID }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered modal-sm">

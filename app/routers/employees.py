@@ -43,7 +43,10 @@ def create_employee_action(
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
-        hashed_pwd = hash_password(password.strip())
+        raw_pwd = password.strip()
+        if len(raw_pwd.encode("utf-8")) > 72:
+            raise ValueError("Mật khẩu không được vượt quá 72 bytes (giới hạn của thuật toán bcrypt).")
+        hashed_pwd = hash_password(raw_pwd)
         execute_sp(
             "dbo.sp_Employee_Insert",
             (full_name.strip(), role_name.strip(), username.strip(), hashed_pwd, None),
@@ -89,7 +92,12 @@ def edit_employee_action(
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
-        hashed_pwd = hash_password(password.strip()) if password and password.strip() else None
+        hashed_pwd = None
+        if password and password.strip():
+            raw_pwd = password.strip()
+            if len(raw_pwd.encode("utf-8")) > 72:
+                raise ValueError("Mật khẩu không được vượt quá 72 bytes (giới hạn của thuật toán bcrypt).")
+            hashed_pwd = hash_password(raw_pwd)
         execute_sp(
             "dbo.sp_Employee_Update",
             (employee_id, full_name.strip(), role_name.strip(), hashed_pwd),

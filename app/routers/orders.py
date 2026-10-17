@@ -149,7 +149,7 @@ def order_detail_page(order_id: int, request: Request, user=Depends(require_role
     })
 
 @router.post("/{order_id}/cancel")
-def cancel_order_action(order_id: int, request: Request, user=Depends(require_role(["Admin", "Manager", "Sales"]))):
+def cancel_order_action(order_id: int, request: Request, user=Depends(require_role(["Manager", "Sales"]))):
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:

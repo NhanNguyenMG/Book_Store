@@ -259,6 +259,7 @@ GRANT CONTROL ON DATABASE::BookStore TO role_admin;
 -- Enforce Separation of Duties (SoD) & Least Privilege:
 -- Admin is strictly system/IT management; denied POS sales orders, warehouse stock adjustments, and catalog mutations
 DENY EXECUTE ON dbo.sp_CreateOrder TO role_admin;
+DENY EXECUTE ON dbo.sp_CancelOrder TO role_admin;
 DENY EXECUTE ON dbo.sp_UpdateBookStock TO role_admin;
 DENY EXECUTE ON dbo.sp_Book_Insert TO role_admin;
 DENY EXECUTE ON dbo.sp_Book_Update TO role_admin;
