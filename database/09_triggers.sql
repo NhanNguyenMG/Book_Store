@@ -171,8 +171,8 @@ BEGIN
         WHERE i.Price <> d.Price;
     END
 
-    -- 5.3. Log inventory stock updates
-    IF UPDATE(StockQuantity)
+    -- 5.3. Log manual inventory stock updates (exclude nested triggers from order fulfillment/cancellation)
+    IF UPDATE(StockQuantity) AND TRIGGER_NESTLEVEL() <= 1
     BEGIN
         INSERT INTO dbo.AuditLog (TableName, ActionType, RecordID, ChangedBy, ChangedDate, OldData, NewData)
         SELECT 

@@ -30,7 +30,7 @@ async def create_author_action(
     author_name: str = Form(...),
     yob: int = Form(None),
     nationality: str = Form(None),
-    user=Depends(require_role(["Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:
@@ -46,7 +46,7 @@ async def edit_author_action(
     author_name: str = Form(...),
     yob: int = Form(None),
     nationality: str = Form(None),
-    user=Depends(require_role(["Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:
@@ -59,7 +59,7 @@ async def edit_author_action(
 async def delete_author_action(
     author_id: int,
     request: Request,
-    user=Depends(require_role(["Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:
@@ -74,7 +74,7 @@ async def quick_create_author(
     author_name: str = Form(...),
     yob: int = Form(None),
     nationality: str = Form(None),
-    user=Depends(require_role(["Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     name = author_name.strip()

@@ -462,7 +462,6 @@ CREATE OR ALTER PROCEDURE dbo.sp_Book_Insert
     @AuthorID INT,
     @PublisherID INT,
     @Price MONEY,
-    @StockQuantity INT = 0,
     @NewID INT OUTPUT
 AS
 BEGIN
@@ -471,7 +470,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRAN;
         INSERT INTO dbo.Book (Title, GenreID, AuthorID, PublisherID, Price, StockQuantity)
-        VALUES (@Title, @GenreID, @AuthorID, @PublisherID, @Price, @StockQuantity);
+        VALUES (@Title, @GenreID, @AuthorID, @PublisherID, @Price, 0);
         SET @NewID = SCOPE_IDENTITY();
         COMMIT TRAN;
     END TRY
@@ -488,8 +487,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Book_Update
     @GenreID INT,
     @AuthorID INT,
     @PublisherID INT,
-    @Price MONEY,
-    @StockQuantity INT
+    @Price MONEY
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -501,8 +499,7 @@ BEGIN
             GenreID = @GenreID,
             AuthorID = @AuthorID,
             PublisherID = @PublisherID,
-            Price = @Price,
-            StockQuantity = @StockQuantity
+            Price = @Price
         WHERE BookID = @BookID;
         COMMIT TRAN;
     END TRY

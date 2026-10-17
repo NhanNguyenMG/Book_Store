@@ -93,12 +93,20 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="stock_quantity" class="form-label fw-semibold small">Số lượng tồn kho <span class="text-danger">*</span></label>
-                            <input type="number" min="0" class="form-control" id="stock_quantity" name="stock_quantity" required value="{{ book.StockQuantity if book else 0 }}" {% if book and book.BookID and user.Role != 'Inventory' %}readonly disabled-readonly class="bg-light"{% endif %}>
-                            {% if book and book.BookID and user.Role != 'Inventory' %}
-                            <div class="form-text text-warning small"><i class="bi bi-shield-lock me-1"></i>Chỉ Thủ kho (Inventory) mới có thẩm quyền điều chỉnh số lượng tồn kho.</div>
+                            {% if book and book.BookID %}
+                            <label class="form-label fw-semibold small">Số lượng tồn kho hiện tại</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light fw-bold" value="{{ book.StockQuantity }}" readonly>
+                                <span class="input-group-text bg-light">cuốn</span>
+                            </div>
+                            <div class="form-text text-muted small"><i class="bi bi-info-circle me-1"></i>Số lượng tồn kho được quản lý và nhập kho riêng biệt bởi bộ phận Thủ kho (sp_UpdateBookStock).</div>
                             {% else %}
-                            <div class="form-text small">Tồn kho không được âm (ràng buộc CK_Book_Stock).</div>
+                            <label class="form-label fw-semibold small">Số lượng tồn kho ban đầu</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light text-muted" value="0 (Mặc định)" readonly>
+                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill text-muted"></i></span>
+                            </div>
+                            <div class="form-text text-muted small"><i class="bi bi-info-circle me-1"></i>Sách mới tạo mặc định tồn kho = 0. Thủ kho sẽ thực hiện quy trình nhập kho thực tế sau khi tạo sách.</div>
                             {% endif %}
                         </div>
                     </div>
