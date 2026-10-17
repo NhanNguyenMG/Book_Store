@@ -9,7 +9,7 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/revenue", response_class=HTMLResponse)
-async def revenue_report_page(
+def revenue_report_page(
     request: Request,
     from_date: str = None,
     to_date: str = None,
@@ -76,7 +76,7 @@ async def revenue_report_page(
     })
 
 @router.get("/top-selling", response_class=HTMLResponse)
-async def top_selling_report_page(
+def top_selling_report_page(
     request: Request,
     user=Depends(require_role(["Admin", "Manager"]))
 ):
@@ -97,7 +97,7 @@ async def top_selling_report_page(
     })
 
 @router.get("/low-stock", response_class=HTMLResponse)
-async def low_stock_report_page(
+def low_stock_report_page(
     request: Request,
     threshold: str = "10",
     user=Depends(require_role(["Admin", "Manager", "Inventory"]))
@@ -128,7 +128,7 @@ async def low_stock_report_page(
     })
 
 @router.get("/audit-logs", response_class=HTMLResponse)
-async def audit_logs_page(
+def audit_logs_page(
     request: Request,
     table_name: str = None,
     action_type: str = None,

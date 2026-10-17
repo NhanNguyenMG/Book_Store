@@ -9,7 +9,7 @@ router = APIRouter(prefix="/employees", tags=["Employees"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_employees(request: Request, user=Depends(require_role(["Admin", "Manager"]))):
+def list_employees(request: Request, user=Depends(require_role(["Admin"]))):
     role = user.get("Role")
     employees = execute_sp("dbo.sp_Employee_GetAll", role=role)
     return templates.TemplateResponse("employees/index.html", {
@@ -22,7 +22,7 @@ async def list_employees(request: Request, user=Depends(require_role(["Admin", "
     })
 
 @router.get("/create", response_class=HTMLResponse)
-async def create_employee_page(request: Request, user=Depends(require_role(["Admin"]))):
+def create_employee_page(request: Request, user=Depends(require_role(["Admin"]))):
     return templates.TemplateResponse("employees/form.html", {
         "request": request,
         "user": user,
@@ -32,7 +32,7 @@ async def create_employee_page(request: Request, user=Depends(require_role(["Adm
     })
 
 @router.post("/create")
-async def create_employee_action(
+def create_employee_action(
     request: Request,
     full_name: str = Form(...),
     username: str = Form(...),
@@ -43,7 +43,10 @@ async def create_employee_action(
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
-        hashed_pwd = hash_password(password.strip())
+        raw_pwd = password.strip()
+        if len(raw_pwd.encode("utf-8")) > 72:
+            raise ValueError("Mật khẩu không được vượt quá 72 bytes (giới hạn của thuật toán bcrypt).")
+        hashed_pwd = hash_password(raw_pwd)
         execute_sp(
             "dbo.sp_Employee_Insert",
             (full_name.strip(), role_name.strip(), username.strip(), hashed_pwd, None),
@@ -63,7 +66,7 @@ async def create_employee_action(
         })
 
 @router.get("/{employee_id}/edit", response_class=HTMLResponse)
-async def edit_employee_page(employee_id: int, request: Request, user=Depends(require_role(["Admin"]))):
+def edit_employee_page(employee_id: int, request: Request, user=Depends(require_role(["Admin"]))):
     role = user.get("Role")
     emp_list = execute_sp("dbo.sp_Employee_GetById", (employee_id,), role=role)
     if not emp_list:
@@ -78,7 +81,7 @@ async def edit_employee_page(employee_id: int, request: Request, user=Depends(re
     })
 
 @router.post("/{employee_id}/edit")
-async def edit_employee_action(
+def edit_employee_action(
     employee_id: int,
     request: Request,
     full_name: str = Form(...),
@@ -89,7 +92,12 @@ async def edit_employee_action(
     role = user.get("Role")
     emp_id = user.get("EmployeeID")
     try:
-        hashed_pwd = hash_password(password.strip()) if password and password.strip() else None
+        hashed_pwd = None
+        if password and password.strip():
+            raw_pwd = password.strip()
+            if len(raw_pwd.encode("utf-8")) > 72:
+                raise ValueError("Mật khẩu không được vượt quá 72 bytes (giới hạn của thuật toán bcrypt).")
+            hashed_pwd = hash_password(raw_pwd)
         execute_sp(
             "dbo.sp_Employee_Update",
             (employee_id, full_name.strip(), role_name.strip(), hashed_pwd),
@@ -109,7 +117,7 @@ async def edit_employee_action(
         })
 
 @router.post("/{employee_id}/delete")
-async def delete_employee_action(
+def delete_employee_action(
     employee_id: int,
     request: Request,
     user=Depends(require_role(["Admin"]))

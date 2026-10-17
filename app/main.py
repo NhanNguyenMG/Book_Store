@@ -14,9 +14,10 @@ load_dotenv()
 
 app = FastAPI(title="Hệ Thống Quản Lý Nhà Sách", description="Hệ thống quản lý vận hành và bán hàng nhà sách")
 
-# Cấu hình Secret Key cho SessionMiddleware
+# Cấu hình Secret Key và thời gian sống phiên cho SessionMiddleware
 SECRET_KEY = os.getenv("SESSION_SECRET_KEY", "bookstore_super_secret_key_dbms_2026")
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=86400)
+SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", "28800"))  # Mặc định 8 tiếng (1 ca làm việc)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=SESSION_MAX_AGE)
 
 # Mount thư mục Static files (CSS, JS)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -36,58 +37,79 @@ app.include_router(authors.router)
 app.include_router(reports.router)
 
 @app.get("/", response_class=RedirectResponse)
-async def root_redirect(request: Request):
+def root_redirect(request: Request):
     user = get_current_user(request)
     if user:
         return RedirectResponse(url="/home", status_code=303)
     return RedirectResponse(url="/login", status_code=303)
 
 @app.get("/home", response_class=HTMLResponse)
-async def home_dashboard(request: Request):
+def home_dashboard(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
+
+    role = user.get("Role", "Sales")
+    emp_id = user.get("EmployeeID")
 
     stats = {
         "total_books": 0,
         "total_orders": 0,
         "total_customers": 0,
-        "low_stock_count": 0
+        "low_stock_count": 0,
+        "out_of_stock_count": 0,
+        "total_inventory_units": 0
     }
     recent_orders = []
     low_stock_books = []
 
+    # Book and Inventory metrics (accessible by all roles)
     try:
-        role = user.get("Role", "Sales")
-        emp_id = user.get("EmployeeID")
-        
-        b_res = execute_query("SELECT COUNT(*) AS cnt FROM dbo.Book", role=role, employee_id=emp_id)
-        if b_res:
-            stats["total_books"] = b_res[0].get("cnt", 0)
-            
-        o_res = execute_query("SELECT COUNT(*) AS cnt FROM dbo.Orders", role=role, employee_id=emp_id)
-        if o_res:
-            stats["total_orders"] = o_res[0].get("cnt", 0)
-            
-        c_res = execute_query("SELECT COUNT(*) AS cnt FROM dbo.Customer", role=role, employee_id=emp_id)
-        if c_res:
-            stats["total_customers"] = c_res[0].get("cnt", 0)
-            
-        ls_res = execute_query("SELECT COUNT(*) AS cnt FROM dbo.Book WHERE StockQuantity <= 5", role=role, employee_id=emp_id)
-        if ls_res:
-            stats["low_stock_count"] = ls_res[0].get("cnt", 0)
-
-        recent_orders = execute_query(
-            "SELECT TOP 5 OrderID, OrderDate, CustomerName, PaymentMethod, TotalAmount, Status FROM dbo.vw_OrderSummary ORDER BY OrderDate DESC",
+        b_res = execute_query(
+            "SELECT COUNT(*) AS total_books, "
+            "       SUM(CASE WHEN StockQuantity <= 5 THEN 1 ELSE 0 END) AS low_stock_count, "
+            "       SUM(CASE WHEN StockQuantity = 0 THEN 1 ELSE 0 END) AS out_of_stock_count, "
+            "       ISNULL(SUM(StockQuantity), 0) AS total_inventory_units "
+            "FROM dbo.Book",
             role=role, employee_id=emp_id
         )
+        if b_res:
+            row = b_res[0]
+            stats["total_books"] = row.get("total_books", 0) or 0
+            stats["low_stock_count"] = row.get("low_stock_count", 0) or 0
+            stats["out_of_stock_count"] = row.get("out_of_stock_count", 0) or 0
+            stats["total_inventory_units"] = row.get("total_inventory_units", 0) or 0
+
         low_stock_books = execute_query(
-            "SELECT TOP 5 Title, StockQuantity, Price FROM dbo.Book WHERE StockQuantity <= 5 ORDER BY StockQuantity ASC",
+            "SELECT TOP 10 BookID, Title, StockQuantity, Price FROM dbo.Book WHERE StockQuantity <= 5 ORDER BY StockQuantity ASC, Title ASC",
             role=role, employee_id=emp_id
         )
     except Exception as e:
-        # Nếu xảy ra lỗi ngoài ý muốn, in ra console để dễ debug
-        print(f"[Dashboard Query Error]: {e}")
+        print(f"[Dashboard Book Query Error]: {e}")
+
+    # Sales & Customer metrics (only for Admin, Manager, Sales; role_inventory is denied)
+    if role in ["Admin", "Manager", "Sales"]:
+        try:
+            o_res = execute_query("SELECT COUNT(*) AS cnt FROM dbo.Orders", role=role, employee_id=emp_id)
+            if o_res:
+                stats["total_orders"] = o_res[0].get("cnt", 0) or 0
+        except Exception as e:
+            print(f"[Dashboard Orders Query Error]: {e}")
+
+        try:
+            c_res = execute_query("SELECT COUNT(*) AS cnt FROM dbo.Customer", role=role, employee_id=emp_id)
+            if c_res:
+                stats["total_customers"] = c_res[0].get("cnt", 0) or 0
+        except Exception as e:
+            print(f"[Dashboard Customer Query Error]: {e}")
+
+        try:
+            recent_orders = execute_query(
+                "SELECT TOP 5 OrderID, OrderDate, CustomerName, PaymentMethod, TotalAmount, Status FROM dbo.vw_OrderSummary ORDER BY OrderDate DESC",
+                role=role, employee_id=emp_id
+            )
+        except Exception as e:
+            print(f"[Dashboard Recent Orders Query Error]: {e}")
 
     return templates.TemplateResponse("home.html", {
         "request": request,

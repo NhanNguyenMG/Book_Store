@@ -8,7 +8,7 @@ router = APIRouter(prefix="/authors", tags=["Authors"])
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
-async def list_authors(request: Request):
+def list_authors(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login?msg=Vui lòng đăng nhập&msg_type=warning", status_code=303)
@@ -25,12 +25,12 @@ async def list_authors(request: Request):
     })
 
 @router.post("/create")
-async def create_author_action(
+def create_author_action(
     request: Request,
     author_name: str = Form(...),
     yob: int = Form(None),
     nationality: str = Form(None),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:
@@ -40,13 +40,13 @@ async def create_author_action(
         return RedirectResponse(url=f"/authors?msg=Lỗi: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{author_id}/edit")
-async def edit_author_action(
+def edit_author_action(
     author_id: int,
     request: Request,
     author_name: str = Form(...),
     yob: int = Form(None),
     nationality: str = Form(None),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:
@@ -56,10 +56,10 @@ async def edit_author_action(
         return RedirectResponse(url=f"/authors?msg=Lỗi: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/{author_id}/delete")
-async def delete_author_action(
+def delete_author_action(
     author_id: int,
     request: Request,
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     try:
@@ -69,12 +69,12 @@ async def delete_author_action(
         return RedirectResponse(url=f"/authors?msg=Lỗi xóa tác giả: {str(e)}&msg_type=danger", status_code=303)
 
 @router.post("/quick-create")
-async def quick_create_author(
+def quick_create_author(
     request: Request,
     author_name: str = Form(...),
     yob: int = Form(None),
     nationality: str = Form(None),
-    user=Depends(require_role(["Admin", "Manager", "Inventory"]))
+    user=Depends(require_role(["Manager"]))
 ):
     role = user.get("Role")
     name = author_name.strip()

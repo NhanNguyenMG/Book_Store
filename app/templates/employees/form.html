@@ -54,8 +54,8 @@
                         <label for="password" class="form-label fw-semibold small">
                             Mật khẩu {% if not employee or not employee.EmployeeID %}<span class="text-danger">*</span>{% else %}(để trống nếu không đổi){% endif %}
                         </label>
-                        <input type="password" class="form-control" id="password" name="password" {% if not employee or not employee.EmployeeID %}required{% endif %} placeholder="Nhập mật khẩu mới...">
-                        <div class="form-text small">Mật khẩu sẽ tự động được băm an toàn bằng PBKDF2-HMAC-SHA256.</div>
+                        <input type="password" class="form-control" id="password" name="password" maxlength="72" {% if not employee or not employee.EmployeeID %}required{% endif %} placeholder="Nhập mật khẩu mới...">
+                        <div class="form-text small">Mật khẩu được băm bảo mật bằng thuật toán bcrypt (tối đa 72 bytes).</div>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 pt-2 border-top">

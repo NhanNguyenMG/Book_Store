@@ -76,7 +76,7 @@ ALTER ROLE role_auth ADD MEMBER user_auth;
 GO
 
 -- ============================================================================
--- Permissions Configuration (Least Privilege Principle)
+-- Permissions Configuration (Least Privilege Principle & Separation of Duties)
 -- ============================================================================
 
 -- 1. Immutable Audit Log: No principal may modify or delete audit log entries
@@ -89,52 +89,74 @@ DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO role_auth;
 GO
 
 -- 3. Sales Role (role_sales): Cashier and POS operations
+-- Read-only on catalog, customer, and orders data for lookups and receipts
 GRANT SELECT ON dbo.vw_BookCatalog TO role_sales;
 GRANT SELECT ON dbo.Book TO role_sales;
 GRANT SELECT ON dbo.Genres TO role_sales;
 GRANT SELECT ON dbo.Author TO role_sales;
 GRANT SELECT ON dbo.Publisher TO role_sales;
-
-GRANT SELECT, INSERT, UPDATE ON dbo.Customer TO role_sales;
--- Deny sales employees from manually altering customer points (only triggers/SPs may do so)
-DENY UPDATE ON dbo.Customer(RewardPoints) TO role_sales;
-
+GRANT SELECT ON dbo.Customer TO role_sales;
 GRANT SELECT ON dbo.Orders TO role_sales;
 GRANT SELECT ON dbo.OrderDetails TO role_sales;
+GRANT SELECT ON dbo.vw_OrderSummary TO role_sales;
+
+-- Revoke direct table write permissions (encapsulation: writes only via SPs)
+REVOKE INSERT, UPDATE, DELETE ON dbo.Customer FROM role_sales;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Orders FROM role_sales;
+REVOKE INSERT, UPDATE, DELETE ON dbo.OrderDetails FROM role_sales;
 
 GRANT EXECUTE ON dbo.sp_CreateOrder TO role_sales;
 GRANT EXECUTE ON dbo.sp_CancelOrder TO role_sales;
 GRANT EXECUTE ON dbo.sp_SearchBooks TO role_sales;
+GRANT EXECUTE ON dbo.sp_Book_GetAll TO role_sales;
+GRANT EXECUTE ON dbo.sp_Book_GetById TO role_sales;
 GRANT EXECUTE ON dbo.sp_Customer_GetAll TO role_sales;
 GRANT EXECUTE ON dbo.sp_Customer_GetById TO role_sales;
 GRANT EXECUTE ON dbo.sp_Customer_Insert TO role_sales;
 GRANT EXECUTE ON dbo.sp_Customer_Update TO role_sales;
 
+GRANT SELECT ON dbo.fn_GetBooksByGenre TO role_sales;
+GRANT EXECUTE ON dbo.fn_CalculateRewardPoints TO role_sales;
+GRANT EXECUTE ON dbo.fn_GetCustomerTier TO role_sales;
+GRANT EXECUTE ON dbo.fn_GetOrderTotal TO role_sales;
+
 DENY SELECT, INSERT, UPDATE, DELETE ON dbo.Employee TO role_sales;
 DENY SELECT, INSERT, UPDATE, DELETE ON dbo.AuditLog TO role_sales;
-DENY SELECT ON dbo.vw_OrderSummary TO role_sales;
 DENY SELECT ON dbo.vw_TopSellingBooks TO role_sales;
 DENY SELECT ON dbo.vw_MonthlyRevenue TO role_sales;
 DENY SELECT ON dbo.vw_CustomerSummary TO role_sales;
 DENY SELECT ON dbo.vw_EmployeeInfo TO role_sales;
+DENY EXECUTE ON dbo.sp_UpdateBookStock TO role_sales;
 GO
 
 -- 4. Inventory Role (role_inventory): Warehouse staff
+-- Read-only on catalog for warehouse lookups
 GRANT SELECT ON dbo.vw_BookCatalog TO role_inventory;
-GRANT SELECT, INSERT, UPDATE ON dbo.Book TO role_inventory;
-GRANT SELECT, INSERT, UPDATE ON dbo.Genres TO role_inventory;
-GRANT SELECT, INSERT, UPDATE ON dbo.Author TO role_inventory;
-GRANT SELECT, INSERT, UPDATE ON dbo.Publisher TO role_inventory;
+GRANT SELECT ON dbo.Book TO role_inventory;
+GRANT SELECT ON dbo.Genres TO role_inventory;
+GRANT SELECT ON dbo.Author TO role_inventory;
+GRANT SELECT ON dbo.Publisher TO role_inventory;
 
+-- Revoke direct table writes (encapsulation: stock updates strictly via sp_UpdateBookStock)
+REVOKE INSERT, UPDATE, DELETE ON dbo.Book FROM role_inventory;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Genres FROM role_inventory;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Author FROM role_inventory;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Publisher FROM role_inventory;
+REVOKE EXECUTE ON dbo.sp_Book_Insert FROM role_inventory;
+REVOKE EXECUTE ON dbo.sp_Book_Update FROM role_inventory;
+REVOKE EXECUTE ON dbo.sp_Book_Delete FROM role_inventory;
+
+-- Warehouse staff manages stock levels via SP and monitors low stock
 GRANT EXECUTE ON dbo.sp_UpdateBookStock TO role_inventory;
 GRANT EXECUTE ON dbo.sp_SearchBooks TO role_inventory;
 GRANT EXECUTE ON dbo.sp_Book_GetAll TO role_inventory;
 GRANT EXECUTE ON dbo.sp_Book_GetById TO role_inventory;
-GRANT EXECUTE ON dbo.sp_Book_Insert TO role_inventory;
-GRANT EXECUTE ON dbo.sp_Book_Update TO role_inventory;
 GRANT EXECUTE ON dbo.sp_Genres_GetAll TO role_inventory;
 GRANT EXECUTE ON dbo.sp_Author_GetAll TO role_inventory;
 GRANT EXECUTE ON dbo.sp_Publisher_GetAll TO role_inventory;
+
+GRANT SELECT ON dbo.fn_GetLowStockBooks TO role_inventory;
+GRANT SELECT ON dbo.fn_GetBooksByGenre TO role_inventory;
 
 DENY SELECT, INSERT, UPDATE, DELETE ON dbo.Orders TO role_inventory;
 DENY SELECT, INSERT, UPDATE, DELETE ON dbo.OrderDetails TO role_inventory;
@@ -148,22 +170,113 @@ DENY SELECT ON dbo.vw_CustomerSummary TO role_inventory;
 DENY SELECT ON dbo.vw_EmployeeInfo TO role_inventory;
 GO
 
--- 5. Manager Role (role_manager): Reporting and catalog management
-GRANT SELECT ON SCHEMA::dbo TO role_manager;
-GRANT EXECUTE ON SCHEMA::dbo TO role_manager;
+-- 5. Manager Role (role_manager): Catalog management, pricing, sales oversight, and reporting
+-- Revoke any previously assigned schema-level privileges
+REVOKE SELECT ON SCHEMA::dbo FROM role_manager;
+REVOKE EXECUTE ON SCHEMA::dbo FROM role_manager;
 
--- Prevent manager from viewing password hashes directly; must use vw_EmployeeInfo
-DENY SELECT ON dbo.Employee(Password) TO role_manager;
+-- Read-only permissions on tables for reporting and search queries
+GRANT SELECT ON dbo.Book TO role_manager;
+GRANT SELECT ON dbo.Genres TO role_manager;
+GRANT SELECT ON dbo.Author TO role_manager;
+GRANT SELECT ON dbo.Publisher TO role_manager;
+GRANT SELECT ON dbo.Customer TO role_manager;
+GRANT SELECT ON dbo.Orders TO role_manager;
+GRANT SELECT ON dbo.OrderDetails TO role_manager;
+
+-- Revoke direct table write permissions (encapsulation: all mutations strictly via SPs)
+REVOKE INSERT, UPDATE, DELETE ON dbo.Book FROM role_manager;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Genres FROM role_manager;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Author FROM role_manager;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Publisher FROM role_manager;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Customer FROM role_manager;
+REVOKE INSERT, UPDATE, DELETE ON dbo.Orders FROM role_manager;
+REVOKE INSERT, UPDATE, DELETE ON dbo.OrderDetails FROM role_manager;
+
+GRANT SELECT ON dbo.vw_BookCatalog TO role_manager;
+GRANT SELECT ON dbo.vw_OrderSummary TO role_manager;
+GRANT SELECT ON dbo.vw_TopSellingBooks TO role_manager;
+GRANT SELECT ON dbo.vw_MonthlyRevenue TO role_manager;
+GRANT SELECT ON dbo.vw_CustomerSummary TO role_manager;
+
+GRANT SELECT ON dbo.fn_GetBooksByGenre TO role_manager;
+GRANT SELECT ON dbo.fn_GetLowStockBooks TO role_manager;
+GRANT EXECUTE ON dbo.fn_CalculateRewardPoints TO role_manager;
+GRANT EXECUTE ON dbo.fn_GetCustomerTier TO role_manager;
+GRANT EXECUTE ON dbo.fn_GetOrderTotal TO role_manager;
+
+-- Manager executes stored procedures for catalog and partner management
+GRANT EXECUTE ON dbo.sp_Book_GetAll TO role_manager;
+GRANT EXECUTE ON dbo.sp_Book_GetById TO role_manager;
+GRANT EXECUTE ON dbo.sp_Book_Insert TO role_manager;
+GRANT EXECUTE ON dbo.sp_Book_Update TO role_manager;
+GRANT EXECUTE ON dbo.sp_Book_Delete TO role_manager;
+GRANT EXECUTE ON dbo.sp_SearchBooks TO role_manager;
+
+GRANT EXECUTE ON dbo.sp_Genres_GetAll TO role_manager;
+GRANT EXECUTE ON dbo.sp_Genres_Insert TO role_manager;
+GRANT EXECUTE ON dbo.sp_Genres_Update TO role_manager;
+GRANT EXECUTE ON dbo.sp_Genres_Delete TO role_manager;
+
+GRANT EXECUTE ON dbo.sp_Author_GetAll TO role_manager;
+GRANT EXECUTE ON dbo.sp_Author_Insert TO role_manager;
+GRANT EXECUTE ON dbo.sp_Author_Update TO role_manager;
+GRANT EXECUTE ON dbo.sp_Author_Delete TO role_manager;
+
+GRANT EXECUTE ON dbo.sp_Publisher_GetAll TO role_manager;
+GRANT EXECUTE ON dbo.sp_Publisher_Insert TO role_manager;
+GRANT EXECUTE ON dbo.sp_Publisher_Update TO role_manager;
+GRANT EXECUTE ON dbo.sp_Publisher_Delete TO role_manager;
+
+GRANT EXECUTE ON dbo.sp_Customer_GetAll TO role_manager;
+GRANT EXECUTE ON dbo.sp_Customer_GetById TO role_manager;
+GRANT EXECUTE ON dbo.sp_Customer_Insert TO role_manager;
+GRANT EXECUTE ON dbo.sp_Customer_Update TO role_manager;
+GRANT EXECUTE ON dbo.sp_Customer_Delete TO role_manager;
+
+GRANT EXECUTE ON dbo.sp_CreateOrder TO role_manager;
+GRANT EXECUTE ON dbo.sp_CancelOrder TO role_manager;
+GRANT EXECUTE ON dbo.sp_GetRevenueReport TO role_manager;
+
+-- Enforce Separation of Duties (SoD) for Manager:
+-- Manager cannot directly modify book stock (Warehouse responsibility)
+DENY EXECUTE ON dbo.sp_UpdateBookStock TO role_manager;
+
+-- Manager is strictly excluded from Employee administration and Audit Log (Admin responsibility)
+DENY SELECT, INSERT, UPDATE, DELETE ON dbo.Employee TO role_manager;
+DENY SELECT, INSERT, UPDATE, DELETE ON dbo.AuditLog TO role_manager;
+DENY SELECT ON dbo.vw_EmployeeInfo TO role_manager;
+DENY EXECUTE ON dbo.sp_Employee_GetAll TO role_manager;
+DENY EXECUTE ON dbo.sp_Employee_GetById TO role_manager;
+DENY EXECUTE ON dbo.sp_Employee_Insert TO role_manager;
+DENY EXECUTE ON dbo.sp_Employee_Update TO role_manager;
+DENY EXECUTE ON dbo.sp_Employee_Delete TO role_manager;
 GO
 
--- 6. Administrator Role (role_admin): Full schema control except POS transactions
+-- 6. Administrator Role (role_admin): Full schema control except POS and operational stock/catalog edits
 GRANT CONTROL ON DATABASE::BookStore TO role_admin;
 
--- Enforce Separation of Duties (SoD) & Least Privilege: 
--- Admin is strictly a system/IT management role and is explicitly denied from creating POS sales orders
+-- Enforce Separation of Duties (SoD) & Least Privilege:
+-- Admin is strictly system/IT management; denied POS sales orders, warehouse stock adjustments, and catalog mutations
 DENY EXECUTE ON dbo.sp_CreateOrder TO role_admin;
+DENY EXECUTE ON dbo.sp_CancelOrder TO role_admin;
+DENY EXECUTE ON dbo.sp_UpdateBookStock TO role_admin;
+DENY EXECUTE ON dbo.sp_Book_Insert TO role_admin;
+DENY EXECUTE ON dbo.sp_Book_Update TO role_admin;
+DENY EXECUTE ON dbo.sp_Book_Delete TO role_admin;
+DENY EXECUTE ON dbo.sp_Genres_Insert TO role_admin;
+DENY EXECUTE ON dbo.sp_Genres_Update TO role_admin;
+DENY EXECUTE ON dbo.sp_Genres_Delete TO role_admin;
+DENY EXECUTE ON dbo.sp_Author_Insert TO role_admin;
+DENY EXECUTE ON dbo.sp_Author_Update TO role_admin;
+DENY EXECUTE ON dbo.sp_Author_Delete TO role_admin;
+DENY EXECUTE ON dbo.sp_Publisher_Insert TO role_admin;
+DENY EXECUTE ON dbo.sp_Publisher_Update TO role_admin;
+DENY EXECUTE ON dbo.sp_Publisher_Delete TO role_admin;
+DENY EXECUTE ON dbo.sp_Customer_Insert TO role_admin;
+DENY EXECUTE ON dbo.sp_Customer_Update TO role_admin;
+DENY EXECUTE ON dbo.sp_Customer_Delete TO role_admin;
 GO
-
 
 -- ============================================================================
 -- Verification Tests Demonstrating Permissions Enforcement
@@ -181,9 +294,8 @@ END CATCH;
 REVERT;
 GO
 
--- Test 2: Verify role_sales is blocked from direct updates to Customer.RewardPoints
+-- Test 2: Verify role_sales is blocked from direct table updates (must use SP)
 EXECUTE AS USER = 'user_sales';
-SELECT TOP 1 CustomerID, CustomerName FROM dbo.Customer;
 BEGIN TRY
     UPDATE dbo.Customer SET RewardPoints = 999 WHERE CustomerID = 1;
 END TRY
@@ -204,11 +316,16 @@ END CATCH;
 REVERT;
 GO
 
--- Test 4: Verify role_manager cannot query Password column directly
+-- Test 4: Verify role_manager cannot query dbo.Employee or AuditLog
 EXECUTE AS USER = 'user_manager';
-SELECT TOP 1 EmployeeID, FullName, Role, Username FROM dbo.vw_EmployeeInfo;
 BEGIN TRY
-    SELECT TOP 1 Password FROM dbo.Employee;
+    SELECT TOP 1 * FROM dbo.Employee;
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+END CATCH;
+BEGIN TRY
+    SELECT TOP 1 * FROM dbo.AuditLog;
 END TRY
 BEGIN CATCH
     SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
@@ -216,7 +333,42 @@ END CATCH;
 REVERT;
 GO
 
--- Test 5: Verify even user_admin cannot delete rows from AuditLog
+-- Test 5: Verify role_manager cannot directly INSERT into Book or execute sp_UpdateBookStock
+EXECUTE AS USER = 'user_manager';
+BEGIN TRY
+    INSERT INTO dbo.Book (Title, GenreID, AuthorID, PublisherID, Price, StockQuantity) 
+    VALUES (N'Hack', 1, 1, 1, 50000, 9999);
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+END CATCH;
+BEGIN TRY
+    EXEC dbo.sp_UpdateBookStock @BookID = 1, @Delta = 10;
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+END CATCH;
+REVERT;
+GO
+
+-- Test 6: Verify role_admin cannot execute sp_CreateOrder or sp_UpdateBookStock
+EXECUTE AS USER = 'user_admin';
+BEGIN TRY
+    EXEC dbo.sp_CreateOrder @CustomerID = 1, @EmployeeID = 1, @PaymentMethod = 'Cash', @CartItemsJson = N'[{"BookID":1,"Quantity":1}]';
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+END CATCH;
+BEGIN TRY
+    EXEC dbo.sp_UpdateBookStock @BookID = 1, @Delta = 10;
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+END CATCH;
+REVERT;
+GO
+
+-- Test 7: Verify even user_admin cannot delete rows from AuditLog
 EXECUTE AS USER = 'user_admin';
 BEGIN TRY
     DELETE FROM dbo.AuditLog;

@@ -30,7 +30,7 @@ def require_role(roles: list[str]):
     return dependency
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
+def login_page(request: Request):
     user = get_current_user(request)
     if user:
         return RedirectResponse(url="/home", status_code=303)
@@ -45,7 +45,7 @@ async def login_page(request: Request):
     })
 
 @router.post("/login", response_class=HTMLResponse)
-async def login_action(
+def login_action(
     request: Request,
     username: str = Form(...),
     password: str = Form(...)
@@ -85,6 +85,6 @@ async def login_action(
         })
 
 @router.get("/logout")
-async def logout_action(request: Request):
+def logout_action(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login?msg=Đã đăng xuất thành công&msg_type=success", status_code=303)

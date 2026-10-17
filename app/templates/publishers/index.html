@@ -8,7 +8,7 @@
         <h3 class="fw-bold mb-0">Quản Lý Nhà Xuất Bản</h3>
         <p class="text-muted small mb-0">Danh sách các đối tác xuất bản sách</p>
     </div>
-    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    {% if user.Role == 'Manager' %}
     <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addPublisherModal">
         <i class="bi bi-plus-lg me-1"></i> Thêm Nhà Xuất Bản
     </button>
@@ -26,7 +26,7 @@
                             <th>Tên Nhà Xuất Bản</th>
                             <th>Địa Chỉ</th>
                             <th>Số Điện Thoại</th>
-                            {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                            {% if user.Role == 'Manager' %}
                             <th class="text-center" style="width: 120px;">Thao Tác</th>
                             {% endif %}
                         </tr>
@@ -39,7 +39,7 @@
                                 <td class="fw-semibold text-primary">{{ p.PublisherName }}</td>
                                 <td>{{ p.Address or '-' }}</td>
                                 <td>{{ p.Phone or '-' }}</td>
-                                {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                                {% if user.Role == 'Manager' %}
                                 <td class="text-center">
                                     <button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#editModal{{ p.PublisherID }}" title="Chỉnh sửa">
                                         <i class="bi bi-pencil"></i>
@@ -114,6 +114,7 @@
     </div>
 </div>
 
+{% if user.Role == 'Manager' %}
 <!-- Add Publisher Modal -->
 <div class="modal fade" id="addPublisherModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -145,4 +146,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

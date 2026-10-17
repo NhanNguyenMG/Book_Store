@@ -44,18 +44,29 @@ BEGIN
         SET @NewOrderID = SCOPE_IDENTITY();
 
         -- Insert details querying authoritative unit prices directly from Book table
+        -- Deduplicate BookID and sum quantities to prevent PK violations
         INSERT INTO dbo.OrderDetails (OrderID, BookID, Quantity, UnitPrice)
         SELECT 
             @NewOrderID,
             c.BookID,
-            c.Quantity,
+            SUM(c.Quantity) AS Quantity,
             b.Price
-        FROM OPENJSON(@CartJson)
-        WITH (
-            BookID INT '$.BookID',
-            Quantity INT '$.Quantity'
+        FROM (
+            SELECT BookID, Quantity
+            FROM OPENJSON(@CartJson)
+            WITH (
+                BookID INT '$.BookID',
+                Quantity INT '$.Quantity'
+            )
+            WHERE BookID IS NOT NULL AND Quantity > 0
         ) c
-        INNER JOIN dbo.Book b ON c.BookID = b.BookID;
+        INNER JOIN dbo.Book b ON c.BookID = b.BookID
+        GROUP BY c.BookID, b.Price;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            THROW 50005, N'Giỏ hàng rỗng hoặc không chứa đầu sách hợp lệ trong hệ thống.', 1;
+        END
 
         -- Transition status to Completed to trigger stock deduction and loyalty points
         UPDATE dbo.Orders
@@ -70,8 +81,20 @@ BEGIN
         IF @@TRANCOUNT > 0
             ROLLBACK TRAN;
 
-        IF ERROR_NUMBER() = 547
-            THROW 50002, N'Không đủ số lượng tồn kho cho một hoặc nhiều sách trong đơn hàng.', 1;
+        DECLARE @ErrNum INT = ERROR_NUMBER();
+        DECLARE @ErrMsg NVARCHAR(2048) = ERROR_MESSAGE();
+
+        IF @ErrNum = 547
+        BEGIN
+            IF @ErrMsg LIKE '%CK_Book_Stock%'
+                THROW 50002, N'Không đủ số lượng tồn kho cho một hoặc nhiều sách trong đơn hàng.', 1;
+            ELSE IF @ErrMsg LIKE '%FK_Orders_Customer%'
+                THROW 50006, N'Khách hàng không tồn tại trong hệ thống.', 1;
+            ELSE IF @ErrMsg LIKE '%FK_Orders_Employee%'
+                THROW 50007, N'Nhân viên lập đơn không tồn tại trong hệ thống.', 1;
+            ELSE
+                THROW 50002, N'Vi phạm ràng buộc dữ liệu khi tạo đơn hàng.', 1;
+        END
         ELSE
             THROW;
     END CATCH;
@@ -439,7 +462,6 @@ CREATE OR ALTER PROCEDURE dbo.sp_Book_Insert
     @AuthorID INT,
     @PublisherID INT,
     @Price MONEY,
-    @StockQuantity INT = 0,
     @NewID INT OUTPUT
 AS
 BEGIN
@@ -448,7 +470,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRAN;
         INSERT INTO dbo.Book (Title, GenreID, AuthorID, PublisherID, Price, StockQuantity)
-        VALUES (@Title, @GenreID, @AuthorID, @PublisherID, @Price, @StockQuantity);
+        VALUES (@Title, @GenreID, @AuthorID, @PublisherID, @Price, 0);
         SET @NewID = SCOPE_IDENTITY();
         COMMIT TRAN;
     END TRY
@@ -465,8 +487,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Book_Update
     @GenreID INT,
     @AuthorID INT,
     @PublisherID INT,
-    @Price MONEY,
-    @StockQuantity INT
+    @Price MONEY
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -478,8 +499,7 @@ BEGIN
             GenreID = @GenreID,
             AuthorID = @AuthorID,
             PublisherID = @PublisherID,
-            Price = @Price,
-            StockQuantity = @StockQuantity
+            Price = @Price
         WHERE BookID = @BookID;
         COMMIT TRAN;
     END TRY
@@ -533,7 +553,6 @@ GO
 CREATE OR ALTER PROCEDURE dbo.sp_Customer_Insert
     @CustomerName NVARCHAR(100),
     @Phone VARCHAR(15),
-    @RewardPoints INT = 0,
     @NewID INT OUTPUT
 AS
 BEGIN
@@ -542,7 +561,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRAN;
         INSERT INTO dbo.Customer (CustomerName, Phone, RewardPoints)
-        VALUES (@CustomerName, @Phone, @RewardPoints);
+        VALUES (@CustomerName, @Phone, 0);
         SET @NewID = SCOPE_IDENTITY();
         COMMIT TRAN;
     END TRY

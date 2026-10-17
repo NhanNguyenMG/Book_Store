@@ -8,7 +8,7 @@
         <h3 class="fw-bold mb-0">Quản Lý Thể Loại</h3>
         <p class="text-muted small mb-0">Danh mục các thể loại sách trong hệ thống</p>
     </div>
-    {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+    {% if user.Role == 'Manager' %}
     <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addGenreModal">
         <i class="bi bi-plus-lg me-1"></i> Thêm Thể Loại
     </button>
@@ -24,7 +24,7 @@
                         <tr>
                             <th style="width: 80px;">Mã</th>
                             <th>Tên Thể Loại</th>
-                            {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                            {% if user.Role == 'Manager' %}
                             <th class="text-center" style="width: 120px;">Thao Tác</th>
                             {% endif %}
                         </tr>
@@ -35,7 +35,7 @@
                             <tr>
                                 <td class="text-muted fw-bold">#{{ g.GenreID }}</td>
                                 <td class="fw-semibold">{{ g.GenreName }}</td>
-                                {% if user.Role in ['Admin', 'Manager', 'Inventory'] %}
+                                {% if user.Role == 'Manager' %}
                                 <td class="text-center">
                                     <button class="btn btn-outline-primary btn-action" data-bs-toggle="modal" data-bs-target="#editModal{{ g.GenreID }}" title="Chỉnh sửa">
                                         <i class="bi bi-pencil"></i>
@@ -100,6 +100,7 @@
     </div>
 </div>
 
+{% if user.Role == 'Manager' %}
 <!-- Add Genre Modal -->
 <div class="modal fade" id="addGenreModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -121,4 +122,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
