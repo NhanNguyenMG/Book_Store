@@ -615,3 +615,10 @@ code {
         transition-duration: 0.01ms !important;
     }
 }
+
+.card.border-start.border-4 {
+    border-width: 1px 1px 1px 4px !important;
+    border-top-color: var(--border) !important;
+    border-right-color: var(--border) !important;
+    border-bottom-color: var(--border) !important;
+}
