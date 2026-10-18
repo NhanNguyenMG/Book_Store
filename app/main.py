@@ -12,6 +12,14 @@ from app.database import execute_query
 
 load_dotenv()
 
+import mimetypes
+from pathlib import Path
+
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("application/javascript", ".js")
+
+BASE_DIR = Path(__file__).resolve().parent
+
 app = FastAPI(title="Hệ Thống Quản Lý Nhà Sách", description="Hệ thống quản lý vận hành và bán hàng nhà sách")
 
 # Cấu hình Secret Key và thời gian sống phiên cho SessionMiddleware
@@ -20,10 +28,10 @@ SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", "28800"))  # Mặc định 8 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=SESSION_MAX_AGE)
 
 # Mount thư mục Static files (CSS, JS)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 # Jinja2 Templates
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 # Đăng ký toàn bộ Router
 app.include_router(auth.router)
