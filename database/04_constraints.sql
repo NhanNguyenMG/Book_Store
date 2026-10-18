@@ -33,7 +33,7 @@ GO
 IF OBJECT_ID(N'dbo.CK_Author_Yob') IS NULL
 BEGIN
     ALTER TABLE dbo.Author ADD CONSTRAINT CK_Author_Yob CHECK (
-        Yob >= 1800 AND Yob <= 2100
+        Yob >= 1000 AND Yob <= YEAR(GETDATE())
     );
 END
 GO
