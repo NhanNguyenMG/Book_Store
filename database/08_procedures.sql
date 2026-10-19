@@ -171,17 +171,24 @@ BEGIN
 END;
 GO
 
--- 5. Multi-criteria book search
+-- 5. Multi-criteria book search with server-side pagination
 CREATE OR ALTER PROCEDURE dbo.sp_SearchBooks
     @Keyword NVARCHAR(100) = NULL,
     @GenreID INT = NULL,
     @AuthorID INT = NULL,
     @MinPrice MONEY = NULL,
     @MaxPrice MONEY = NULL,
-    @InStockOnly BIT = 0
+    @InStockOnly BIT = 0,
+    @PageNumber INT = 1,
+    @PageSize INT = 20
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    IF @PageNumber IS NULL OR @PageNumber < 1
+        SET @PageNumber = 1;
+    IF @PageSize IS NULL OR @PageSize < 1
+        SET @PageSize = 20;
 
     SELECT 
         b.BookID,
@@ -193,7 +200,8 @@ BEGIN
         p.PublisherID,
         p.PublisherName,
         b.Price,
-        b.StockQuantity
+        b.StockQuantity,
+        COUNT(*) OVER() AS TotalCount
     FROM dbo.Book b
     INNER JOIN dbo.Genres g ON b.GenreID = g.GenreID
     INNER JOIN dbo.Author a ON b.AuthorID = a.AuthorID
@@ -204,7 +212,9 @@ BEGIN
       AND (@MinPrice IS NULL OR b.Price >= @MinPrice)
       AND (@MaxPrice IS NULL OR b.Price <= @MaxPrice)
       AND (@InStockOnly = 0 OR b.StockQuantity > 0)
-    ORDER BY b.Title ASC;
+    ORDER BY b.Title ASC
+    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
 END;
 GO
 

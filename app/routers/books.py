@@ -1,3 +1,4 @@
+import math
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -15,7 +16,8 @@ def list_books(
     author_id: str = None,
     min_price: str = None,
     max_price: str = None,
-    in_stock_only: bool = False
+    in_stock_only: bool = False,
+    page: int = 1
 ):
     user = get_current_user(request)
     if not user:
@@ -53,12 +55,17 @@ def list_books(
             pass
 
     stock_flag = 1 if in_stock_only else 0
+    current_page = max(1, page) if page and page > 0 else 1
+    page_size = 20
 
     books = execute_sp(
         "dbo.sp_SearchBooks",
-        (kw, gid, aid, min_p, max_p, stock_flag),
+        (kw, gid, aid, min_p, max_p, stock_flag, current_page, page_size),
         role=role
     )
+
+    total_count = books[0].get("TotalCount", 0) if books and len(books) > 0 else 0
+    total_pages = math.ceil(total_count / page_size) if total_count > 0 else 1
 
     genres = execute_query("SELECT GenreID, GenreName FROM dbo.Genres ORDER BY GenreName", role=role)
     authors = execute_query("SELECT AuthorID, AuthorName FROM dbo.Author ORDER BY AuthorName", role=role)
@@ -70,13 +77,18 @@ def list_books(
         "books": books or [],
         "genres": genres or [],
         "authors": authors or [],
+        "current_page": current_page,
+        "total_pages": total_pages,
+        "total_count": total_count,
+        "page_size": page_size,
         "filters": {
             "keyword": keyword or "",
             "genre_id": genre_id,
             "author_id": author_id,
             "min_price": min_price,
             "max_price": max_price,
-            "in_stock_only": in_stock_only
+            "in_stock_only": in_stock_only,
+            "page": current_page
         },
         "alert_message": request.query_params.get("msg"),
         "alert_type": request.query_params.get("msg_type", "info")

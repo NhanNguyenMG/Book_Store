@@ -84,7 +84,7 @@ def test_list_books_passes_clean_filters_to_stored_procedure(monkeypatch):
     assert response.status_code == 200
     assert tham_so_da_goi["sql"] == "dbo.sp_SearchBooks"
     assert tham_so_da_goi["params"] == (
-        "python", 2, 3, None, None, 1
+        "python", 2, 3, None, None, 1, 1, 20
     )
     assert tham_so_da_goi["kwargs"]["role"] == "Sales"
 
@@ -117,5 +117,38 @@ def test_list_books_ignores_invalid_filter_values(monkeypatch):
 
     assert response.status_code == 200
     assert tham_so_da_goi["params"] == (
-        None, None, None, None, None, 0
+        None, None, None, None, None, 0, 1, 20
+    )
+
+
+def test_list_books_supports_pagination(monkeypatch):
+    monkeypatch.setattr(
+        books,
+        "get_current_user",
+        lambda request: {"Role": "Sales", "EmployeeID": 1},
+    )
+
+    tham_so_da_goi = {}
+
+    def gia_lap_stored_procedure(sql, params=None, **kwargs):
+        tham_so_da_goi["params"] = params
+        return [{
+            "BookID": 1,
+            "Title": "Python Book",
+            "GenreName": "CNTT",
+            "AuthorName": "Guido",
+            "PublisherName": "O'Reilly",
+            "Price": 100000,
+            "StockQuantity": 10,
+            "TotalCount": 50
+        }]
+
+    monkeypatch.setattr(books, "execute_sp", gia_lap_stored_procedure)
+    monkeypatch.setattr(books, "execute_query", lambda *args, **kwargs: [])
+
+    response = client.get("/books", params={"page": "3"})
+
+    assert response.status_code == 200
+    assert tham_so_da_goi["params"] == (
+        None, None, None, None, None, 0, 3, 20
     )

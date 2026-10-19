@@ -92,7 +92,7 @@
                         <td><span class="badge bg-light text-dark border">{{ b.GenreName }}</span></td>
                         <td>{{ b.AuthorName }}</td>
                         <td class="text-muted small">{{ b.PublisherName }}</td>
-                        <td class="text-end fw-bold">{{ "{:,.0f}".format(b.Price) }} đ</td>
+                        <td class="text-end fw-bold">{{ "{:,.0f}".format(b.Price or 0) }} đ</td>
                         <td class="text-center">
                             {% if b.StockQuantity <= 5 %}
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
@@ -188,5 +188,44 @@
             </tbody>
         </table>
     </div>
+    {% if total_pages and total_pages > 1 %}
+    <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-3 gap-2">
+        <div class="small text-muted">
+            Hiển thị <strong>{{ books | length }}</strong> / <strong>{{ total_count }}</strong> cuốn sách (Trang {{ current_page }} / {{ total_pages }})
+        </div>
+        <nav aria-label="Book page navigation">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Nút Trang trước -->
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="/books?keyword={{ filters.keyword }}&genre_id={{ filters.genre_id or '' }}&author_id={{ filters.author_id or '' }}&min_price={{ filters.min_price or '' }}&max_price={{ filters.max_price or '' }}&in_stock_only={{ 'true' if filters.in_stock_only else '' }}&page={{ current_page - 1 }}">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </a>
+                </li>
+
+                <!-- Danh sách trang -->
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= current_page - 2 and p <= current_page + 2) %}
+                    <li class="page-item {% if p == current_page %}active{% endif %}">
+                        <a class="page-link" href="/books?keyword={{ filters.keyword }}&genre_id={{ filters.genre_id or '' }}&author_id={{ filters.author_id or '' }}&min_price={{ filters.min_price or '' }}&max_price={{ filters.max_price or '' }}&in_stock_only={{ 'true' if filters.in_stock_only else '' }}&page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == current_page - 3 or p == current_page + 3 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Nút Trang sau -->
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="/books?keyword={{ filters.keyword }}&genre_id={{ filters.genre_id or '' }}&author_id={{ filters.author_id or '' }}&min_price={{ filters.min_price or '' }}&max_price={{ filters.max_price or '' }}&in_stock_only={{ 'true' if filters.in_stock_only else '' }}&page={{ current_page + 1 }}">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% elif total_count and total_count > 0 %}
+    <div class="card-footer bg-white py-2 small text-muted">
+        Tổng số: <strong>{{ total_count }}</strong> cuốn sách
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
