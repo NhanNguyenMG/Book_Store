@@ -53,4 +53,12 @@ document.addEventListener("DOMContentLoaded", function () {
         apDungGiaoDien(giaoDienHienTai);
         luuGiaoDien(giaoDienHienTai);
     });
+
+    // Tự động chuyển Modal ra trực tiếp dưới <body> khi mở
+    // Giúp Modal luôn nổi lên trên backdrop ngay cả khi trang có animation / transform
+    document.addEventListener("show.bs.modal", function (event) {
+        if (event.target && event.target.parentElement !== document.body) {
+            document.body.appendChild(event.target);
+        }
+    });
 });

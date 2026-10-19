@@ -72,6 +72,18 @@ a {
     width: 100%;
     max-width: 1800px;
     margin-inline: auto;
+    animation: page-enter 0.35s ease;
+}
+
+@keyframes page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Modal and Backdrop Layering */
