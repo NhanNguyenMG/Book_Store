@@ -16,8 +16,8 @@ def list_books(
     author_id: str = None,
     min_price: str = None,
     max_price: str = None,
-    in_stock_only: bool = False,
-    page: int = 1
+    in_stock_only: str = None,
+    page: str = "1"
 ):
     user = get_current_user(request)
     if not user:
@@ -54,8 +54,20 @@ def list_books(
         except ValueError:
             pass
 
-    stock_flag = 1 if in_stock_only else 0
-    current_page = max(1, page) if page and page > 0 else 1
+    # Clean in_stock_only safely (accepts 'true', '1', 'on' from form/checkbox)
+    stock_flag = 1 if in_stock_only and str(in_stock_only).strip().lower() in ("true", "1", "on") else 0
+    is_in_stock = bool(stock_flag)
+
+    # Clean page safely
+    current_page = 1
+    if page:
+        try:
+            val = int(str(page).strip())
+            if val > 0:
+                current_page = val
+        except ValueError:
+            pass
+
     page_size = 20
 
     books = execute_sp(
@@ -87,7 +99,7 @@ def list_books(
             "author_id": author_id,
             "min_price": min_price,
             "max_price": max_price,
-            "in_stock_only": in_stock_only,
+            "in_stock_only": is_in_stock,
             "page": current_page
         },
         "alert_message": request.query_params.get("msg"),

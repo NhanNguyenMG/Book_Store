@@ -1,61 +1,59 @@
-
 document.addEventListener("DOMContentLoaded", function () {
-    const nutDoiGiaoDien = document.getElementById("themeToggle");
-    const bieuTuong = document.getElementById("themeIcon");
-    const phanTuHtml = document.documentElement;
+    const themeToggleBtn = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const htmlElement = document.documentElement;
 
-    if (!nutDoiGiaoDien || !bieuTuong) {
+    if (!themeToggleBtn || !themeIcon) {
         return;
     }
 
-    function apDungGiaoDien(giaoDien) {
-        const giaoDienHopLe = giaoDien === "dark" ? "dark" : "light";
+    function applyTheme(theme) {
+        const validTheme = theme === "dark" ? "dark" : "light";
 
-        phanTuHtml.setAttribute("data-bs-theme", giaoDienHopLe);
-        bieuTuong.className = giaoDienHopLe === "dark"
+        htmlElement.setAttribute("data-bs-theme", validTheme);
+        themeIcon.className = validTheme === "dark"
             ? "bi bi-sun-fill"
             : "bi bi-moon-stars-fill";
 
-        nutDoiGiaoDien.setAttribute(
+        themeToggleBtn.setAttribute(
             "aria-label",
-            giaoDienHopLe === "dark"
-                ? "Chuyển sang giao diện sáng"
-                : "Chuyển sang giao diện tối"
+            validTheme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme"
         );
 
-        nutDoiGiaoDien.setAttribute(
+        themeToggleBtn.setAttribute(
             "title",
-            giaoDienHopLe === "dark"
-                ? "Chuyển sang giao diện sáng"
-                : "Chuyển sang giao diện tối"
+            validTheme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme"
         );
     }
 
-    function luuGiaoDien(giaoDien) {
+    function saveTheme(theme) {
         try {
-            localStorage.setItem("bookstore-theme", giaoDien);
+            localStorage.setItem("bookstore-theme", theme);
         } catch (error) {
-            // Giao diện vẫn hoạt động nếu trình duyệt chặn localStorage.
+            // Theme still works even if localStorage is blocked by browser policy
         }
     }
 
-    let giaoDienHienTai =
-        phanTuHtml.getAttribute("data-bs-theme") || "light";
+    let currentTheme =
+        htmlElement.getAttribute("data-bs-theme") || "light";
 
-    apDungGiaoDien(giaoDienHienTai);
+    applyTheme(currentTheme);
 
-    nutDoiGiaoDien.addEventListener("click", function () {
-        giaoDienHienTai =
-            phanTuHtml.getAttribute("data-bs-theme") === "dark"
+    themeToggleBtn.addEventListener("click", function () {
+        currentTheme =
+            htmlElement.getAttribute("data-bs-theme") === "dark"
                 ? "light"
                 : "dark";
 
-        apDungGiaoDien(giaoDienHienTai);
-        luuGiaoDien(giaoDienHienTai);
+        applyTheme(currentTheme);
+        saveTheme(currentTheme);
     });
 
-    // Tự động chuyển Modal ra trực tiếp dưới <body> khi mở
-    // Giúp Modal luôn nổi lên trên backdrop ngay cả khi trang có animation / transform
+    // Auto-relocate active modal directly under <body> to prevent stacking context clipping
     document.addEventListener("show.bs.modal", function (event) {
         if (event.target && event.target.parentElement !== document.body) {
             document.body.appendChild(event.target);
